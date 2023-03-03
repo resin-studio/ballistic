@@ -1,0 +1,101 @@
+% \documentclass{article}
+% \documentclass[]{acmart}
+\documentclass[manuscript]{acmart}
+% \documentclass[manuscript,screen,review]{acmart}
+% \documentclass[manuscript]
+\usepackage{mathpartir}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage{listings}
+
+\makeatletter % allow us to mention @-commands
+\def\arcr{\@arraycr}
+\makeatother
+
+\lstset{
+    identifierstyle=\color{violet},
+    % textcolor=blue,
+    % keywordstyle=\color{blue},
+    keywordstyle=\text,
+    basicstyle=\ttfamily,
+    mathescape=true,
+    showspaces=false,
+    morekeywords={let, fix, in}
+}
+\usepackage[utf8]{inputenc}
+% \usepackage[T1]{fontenc}
+
+
+\title{Proposal: Guiding synthesis of stochastic programs with probabilistic and statistical types}
+\author{Thomas Logan}
+\date{October 2022}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Specification systems like types and program logics have long been used to abstractly characterize the meaning of programs.
+These systems enable specifying hard constraints that are mechanically verified against programs to be certainly true or possibly false.
+While these hard constraints are valuable in providing strong guarantees for artificial systems that have exact semantics, 
+they fail to capture the semantics of many natural occurring systems semantics contain uncertainty.
+There are two related fields for describing and reasoning with uncertainty: statistics and probability.
+In classical reasoning, input-output reasoning relies on examples, while logical reasoning relies on formulas for specification.    
+Likewise, in reasoning with uncertainty, statistical reasoning relies on datasets, while probabilistic reasoning relies on distributions for specification.
+
+
+\emph{Machine learning} is the field that has leveraged statistics to synthesize programs with notable success over the last few decades.
+Approximate \emph{Bayesian reasoning} with probabilities has been used for inferring likelihood of events based on probabilistic models
+of natural phenomenon, such as, relating medical diseases, therapies, and outcomes. 
+More recently, Bayesian reasoning and machine learning have been combined to synthesize stochastic programs that satisfy provided datasets and probability distributions (as a priori).
+
+
+
+\section{Objectives}
+- Sketch the high-level objectives of the project
+
+The goal of this project is to design a language and implement a system named \emph{Basllistic} that can synthesis/learn stochastic programs from statistical datasets and probabilistic distributions.
+
+The state of the art system for learning from data and distributions is \emph{Pyro}, a library in \emph{Python}. \emph{Pyro} is an impressive tool that can handle many  
+of the algorithmic steps of learning through simple library calls. However, constructing a specification in Pyro is non-trivial, as it relies on constructing 
+a partial stochastic program, akin to a sketch. The user must specify some combination of function calls that use machine learning and Bayesian reasoning Algorithms to
+solve for unknowns. Since Pyro is a library rather than a language, it is limited in how it can guide the specifier since the static semantics of the language is general to Python. 
+Additionally, \emph{Pyro} often requires redundant information in its specification API, such as a string name, which is typically the same as a Python variable. 
+
+\emph{Basllistic} will enable some subset of the bayesian reasoning and machine learning capabilities of \emph{Pyro},
+but with a declarative specification language rather than a stochastic sketch. 
+One approach might be to search over different program architectures guided by types.
+
+
+\section{Language}
+- Give some information about the synthesis DSL you are planning to use, and your notion of specifications
+
+The syntax of the language with consist of terms and types, representing the concepts of programs and specifications, respectively. 
+The terms may represent scalars, vectors, and matrices of real numbers, and arithmetic operations on them. 
+As synthesized programs should be composable with non-synthesized programs, function and application are necessary.
+Branching and comparison operators would additionally aid in constructing programs by hand. 
+A term-level notion of a probability distribution a long with a sampling operator will be essential.
+Additionally, since gradient-based machine learning techniques rely on differentiation, 
+it seems natural to expose an interface to differentiation directly.
+
+The types will include information about the shape of data (e.g. function, scalar, matrix, etc) and soft constraints, like a dataset, or various forms of representing distributions.
+There could be built in distributions with pith parameters, and well as ways for specifying bayesian networks. 
+
+
+\section{Algorithms}
+- Offer some information about the algorithmic approaches you will use
+- differentiation and back-propagation
+
+\section{Tools}
+- Name some candidates the infrastructure that you are likely to use to implement your approach
+- Lean autodiff package
+- SciLean: https://github.com/lecopivo/SciLean
+
+\section{References}
+- Cite relevant references.
+- Pyro
+- pytorch
+- WebPPL
+
+\end{document}

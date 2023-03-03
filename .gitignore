@@ -1,0 +1,14 @@
+/build
+/lake-packages/**
+**.aux
+**.log
+**.nav
+**.out
+**.snm
+**.pdf
+**.toc
+**.vrb
+link
+**.fdb_latexmk
+**.fls
+**.synctex.gz
