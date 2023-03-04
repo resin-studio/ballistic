@@ -1,8 +1,12 @@
+\documentclass[runningheads]{llncs}
+
 % \documentclass{article}
-% \documentclass[]{acmart}
-\documentclass[manuscript]{acmart}
-% \documentclass[manuscript,screen,review]{acmart}
-% \documentclass[manuscript]
+
+\usepackage[
+backend=biber,
+style=alphabetic,
+]{biblatex}
+
 \usepackage{mathpartir}
 \usepackage{hyperref}
 \usepackage{mathtools}
@@ -29,7 +33,7 @@
 
 \title{Proposal: Guiding synthesis of stochastic programs with probabilistic and statistical types}
 \author{Thomas Logan}
-\date{October 2022}
+\institute{University of Texas at Austin}
 
 \begin{document}
 
@@ -38,64 +42,112 @@
 \section{Introduction}
 Specification systems like types and program logics have long been used to abstractly characterize the meaning of programs.
 These systems enable specifying hard constraints that are mechanically verified against programs to be certainly true or possibly false.
-While these hard constraints are valuable in providing strong guarantees for artificial systems that have exact semantics, 
-they fail to capture the semantics of many natural occurring systems semantics contain uncertainty.
+While these hard constraints are valuable in providing strong guarantees for artificial systems, 
+they fail to capture the semantics of many naturally occurring systems that contain uncertainty.
 There are two related fields for describing and reasoning with uncertainty: statistics and probability.
-In classical reasoning, input-output reasoning relies on examples, while logical reasoning relies on formulas for specification.    
-Likewise, in reasoning with uncertainty, statistical reasoning relies on datasets, while probabilistic reasoning relies on distributions for specification.
+In classical reasoning, specifications may be in the form of input-output examples or logical formulas.   
+Likewise, in reasoning with uncertainty, specifications may be in the form of statistical datasets or probabilistic distributions.
 
 
-\emph{Machine learning} is the field that has leveraged statistics to synthesize programs with notable success over the last few decades.
-Approximate \emph{Bayesian reasoning} with probabilities has been used for inferring likelihood of events based on probabilistic models
-of natural phenomenon, such as, relating medical diseases, therapies, and outcomes. 
-More recently, Bayesian reasoning and machine learning have been combined to synthesize stochastic programs that satisfy provided datasets and probability distributions (as a priori).
-
+\emph{Machine learning} is the field that has leveraged statistics to synthesize programs 
+with notable success over the last few decades.
+\emph{bayesian reasoning} has leveraged probability to derive likelihoods from prior distributions.
+Both have had success automating processes related to natural phenomenon.  
 
 
 \section{Objectives}
-- Sketch the high-level objectives of the project
+The goal of this project is to design a language and implement a system named \emph{Ballistic} 
+that can synthesize/learn stochastic programs from statistical datasets and probabilistic distributions.
 
-The goal of this project is to design a language and implement a system named \emph{Basllistic} that can synthesis/learn stochastic programs from statistical datasets and probabilistic distributions.
+The state of the art system for learning from datasets and distributions is \emph{Pyro}, a library in \emph{Python}. 
+Pyro is an impressive tool that can handle many of the algorithmic steps of learning through simple library calls. 
+However, constructing a specification in Pyro is non-trivial, as it relies on constructing 
+a partial stochastic program, akin to a sketch. The user must specify some combination of function calls that use 
+algorithms from machine learning and bayesian reasoning to solve for unknowns. 
+Since Pyro is a library rather than a language, it is limited in how it can guide the specifier 
+since the static semantics of the language is general to Python. 
+Due to another drawback of the library form, Pyro often requires redundant information 
+in slightly different forms to appease both its particular semantics and the semantics of Python. 
 
-The state of the art system for learning from data and distributions is \emph{Pyro}, a library in \emph{Python}. \emph{Pyro} is an impressive tool that can handle many  
-of the algorithmic steps of learning through simple library calls. However, constructing a specification in Pyro is non-trivial, as it relies on constructing 
-a partial stochastic program, akin to a sketch. The user must specify some combination of function calls that use machine learning and Bayesian reasoning Algorithms to
-solve for unknowns. Since Pyro is a library rather than a language, it is limited in how it can guide the specifier since the static semantics of the language is general to Python. 
-Additionally, \emph{Pyro} often requires redundant information in its specification API, such as a string name, which is typically the same as a Python variable. 
-
-\emph{Basllistic} will enable some subset of the bayesian reasoning and machine learning capabilities of \emph{Pyro},
+Ballistic will enable some subset of the bayesian reasoning and machine learning capabilities of Pyro,
 but with a declarative specification language rather than a stochastic sketch. 
-One approach might be to search over different program architectures guided by types.
+The specification could also include logical specifications, and the system could synthesize a mixture of 
+programs with a mixture of symbolic control-flow and neural operations.
+The approach might be to search over different program architectures guided by types.
 
 
 \section{Language}
-- Give some information about the synthesis DSL you are planning to use, and your notion of specifications
-
-The syntax of the language with consist of terms and types, representing the concepts of programs and specifications, respectively. 
+The syntax of the language will consist of terms and types, representing the concepts of programs and specifications, respectively. 
 The terms may represent scalars, vectors, and matrices of real numbers, and arithmetic operations on them. 
-As synthesized programs should be composable with non-synthesized programs, function and application are necessary.
-Branching and comparison operators would additionally aid in constructing programs by hand. 
+Symbolic features like function and application are necessary for generality.
+Branching and comparison operators would be useful for synthesizing symbolic programs from logical constraints. 
 A term-level notion of a probability distribution a long with a sampling operator will be essential.
 Additionally, since gradient-based machine learning techniques rely on differentiation, 
 it seems natural to expose an interface to differentiation directly.
 
-The types will include information about the shape of data (e.g. function, scalar, matrix, etc) and soft constraints, like a dataset, or various forms of representing distributions.
-There could be built in distributions with pith parameters, and well as ways for specifying bayesian networks. 
+The types will include information about the shape of data (e.g. function, scalar, matrix, etc), 
+hard constraints in the form of examples or refinement formulas, 
+and soft constraints in the form of datasets and various representations of distributions.
+There could be built-in distribution constructors (.e.g. normal distribution), 
+along with ways for specifying bayesian networks. 
+If a differentiation operator is included, it would also make sense to have some notion of a continuous function type.
 
 
 \section{Algorithms}
-- Offer some information about the algorithmic approaches you will use
-- differentiation and back-propagation
+The foundational algorithms of both machine learning and probabilistic reasoning will be essential. 
+From machine learning, we will on rely on differentiation, back propagation, and gradient descent. 
+From bayesian reasoning, we will generate distribution terms from distribution types.   
+These distribution terms will sample according to the semantics of enumeration, particle filtering, or MCMC. 
+Just as types in classical reasoning may be abstract and describe many potential inhabitants, 
+distribution types may be abstract and leave some information unspecified.  
+Mixing in machine learning techniques offers clues on how to partially specify distributions
+and how to learn optimal candidates rather than merely compile distribution types into sampling programs. 
+The combination of machine learning and bayesian reasoning relies on \emph{stochastic variational inference}, as used in Pyro.
+
+I don't yet know what other techniques will be required. The size of spaces has been a theme in synthesis.
+I will keep an eye out for issues related to these. 
+For compressing version spaces (space of hypothesized programs), we have seen that BDD-style techniques may help.
+For pruning search spaces (the space that hypothesis programs are chose from), 
+either counter-example guided techniques or compositional techniques may help. 
 
 \section{Tools}
-- Name some candidates the infrastructure that you are likely to use to implement your approach
-- Lean autodiff package
-- SciLean: https://github.com/lecopivo/SciLean
+As Pyro is a mature and popular library with many of the foundational synthesis algorithms already built into its APIs, 
+it is a natural choice to build upon.
+As Pyro is a Python library, using Python would offer advantages, 
+but Python is not the most natural for implementing object languages, yet it is still quite manageable. 
 
-\section{References}
-- Cite relevant references.
-- Pyro
-- pytorch
-- WebPPL
+An alternative approach, could be to use a language that has excellent features for implementing object languages, 
+such as Lean.
+Lean offers excellent support for representing ASTs and writing various kinds of semantics and analyses.
+As far as I know, there is no equivalent to Pyro in Lean, but I may be able to replicate some of its core features.
+
+
+\begin{thebibliography}{8}
+
+\bibitem{pyro}
+E.Bingham, J.P. Chen, M. Jankowiak, F. Obermeyer, N. Pradhan, T.Karaletsos, R. Singh, P. Szerlip, P. Horsfall and, N.D. Goodman. 2019. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning Research, 20(1), pp.973-978.
+
+\bibitem{dippl}
+N. D. Goodman and A. Stuhlmüller (electronic). The Design and Implementation of Probabilistic Programming Languages. Retrieved 2023-3-3 from http://dippl.org.
+
+\bibitem{synquid}
+N. Polikarpova, I. Kuraj, and A. Solar-Lezama. 2016. Program synthesis from polymorphic refinement types. ACM SIGPLAN Notices, 51(6), pp.522-538.
+
+\bibitem{sketch}
+A. Solar-Lezama, L. Tancau, R. Bodik, S. Seshia. and V. Saraswat. 2006, October. Combinatorial sketching for finite programs. In Proceedings of the 12th international conference on Architectural support for programming languages and operating systems (pp. 404-415).
+
+\bibitem{continuity}
+S. Chaudhuri, S. Gulwani, and R. Lublinerman. 2012. Continuity and robustness of programs. Communications of the ACM, 55(8), pp.107-115.
+
+\bibitem{examples}
+J.K. Feser, S. Chaudhuri, and I. Dillig, 2015. Synthesizing data structure transformations from input-output examples. ACM SIGPLAN Notices, 50(6), pp.229-239.
+    
+\bibitem{strings}
+S. Gulwani. 2011. Automating string processing in spreadsheets using input-output examples. ACM Sigplan Notices, 46(1), pp.317-330.
+
+\bibitem{stochlam}
+N. Ramsey and A. Pfeffer. 2002, January. Stochastic lambda calculus and monads of probability distributions. In Proceedings of the 29th ACM SIGPLAN-SIGACT symposium on Principles of programming languages (pp. 154-165).
+
+\end{thebibliography}
 
 \end{document}
