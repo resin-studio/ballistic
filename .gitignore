@@ -1,5 +1,3 @@
-/build
-/lake-packages/**
 **.aux
 **.log
 **.nav
@@ -8,8 +6,14 @@
 **.pdf
 **.toc
 **.vrb
-link
 **.fdb_latexmk
 **.fls
 **.synctex.gz
+**/__pycache__
+workspace.code-workspace
+env
+build
+dist/**
+src/ballistic.egg-info/**
+!src/res/cache
 .DS_Store
