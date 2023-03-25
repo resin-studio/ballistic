@@ -8,7 +8,7 @@ def all_paths(base_root : str) -> list[str]:
         prefix = (
             ""
             if root == base_root else
-	    root[len(base_root) + 1:] + '/'
+            root[len(base_root) + 1:] + '/'
         )
         for f in files:
             paths.append(prefix + f)
