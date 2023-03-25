@@ -20,3 +20,7 @@
 [ ] what are the possible distributions the language should use 
 [ ] what are the possible learning algorithms the language should use 
 [ ] how will the language represent these concepts succinctly
+    - look at examples from video and determine how to represent as bayesian graph + data
+    - how are latent variable priors specified?
+    - can we give distributions to observable variables and compile to a stochastic generator? 
+    - can we combine specification of observables with bayesian graphs and data together
