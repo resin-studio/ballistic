@@ -26,17 +26,20 @@
 - probabilities could look like `Pr[x + y = z | ... ]`
 - bayesian network corresponds to type/DSL
 - operations in DSL correspond to constraints in bayesian types  
-- bayesian network looks like constraint type: 
-    - D = (Some C . C :: B = A + C)   
-        Pr(D) = Pr[C | A, B]
+- bayesian network can be represented as constraint type: 
+    - (Some C . C :: B = A + C)   
+- the latent variables (M, B) are indicated by existential quantifiers
     - All X . X -> (Some Y M B. Y :: Y = M * X + B)   
-        - note the latent variables indicated by existential quantifiers
-- constraint can be abstracted into a grammar for a DSL (e.g. Syngar)
 - restrict to basic arithmetic and real comparison operators
 
 ## synthesis approach 
-- use syngar/tree automata to synthesize architecture satisfying DSL 
-- use stochastic variational inference to synthesize 
+- represent bayesian network as constraint type
+- compile constraint type into DSL
+- compile DSL into tree automaton
+- repeat:
+    - search for tree that is accepted by tree automata (Syngar) 
+    - construct model from tree and dataset with priors 
+    - use stochastic variational inference to learn posteriors (Pyro)
 
     
 
