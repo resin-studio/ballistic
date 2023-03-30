@@ -27,7 +27,10 @@
 - bayesian network corresponds to type/DSL
 - operations in DSL correspond to constraints in bayesian types  
 - bayesian network can be represented as constraint type: 
-    - (Some C . C :: B = A + C)   
+    - x : a, z : c, y : {b | a, b, c : Sum} ~> y = z - x 
+- samples are represented as variables in types 
+- distributions are not in types directly
+- bayesian network constraint can be compiled into a DSL refinement
 - the latent variables (M, B) are indicated by existential quantifiers
     - All X . X -> (Some Y M B. Y :: Y = M * X + B)   
 - restrict to basic arithmetic and real comparison operators
