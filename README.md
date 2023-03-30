@@ -22,6 +22,28 @@
     - may be parameterized by neural network
 
 ## language design
+- a procedure is a function from scalars to a distribution 
+    - ```
+    dist foo(x) =  
+        for m in Normal(0,1)
+        for b in Norma(0,1)
+        let y = m * x + b
+        y
+    ```
+    - ```
+    dist foo(x) =  
+        bind Normal(0,1) as m =>
+        bind Norma(0,1) as b =>
+        return m * x + b
+    ```
+- a script is a distribution constructed from primitive distributions
+    ```
+    for x in Normal(0,1) 
+    for y in Normal(0,1) 
+    let z = x + y 
+    z
+    ```
+- "evaluation" is really "sampling" a distribution
 - distribution function could look like `p(x : X) : [0, 1] = ...`
 - probabilities could look like `Pr[x + y = z | ... ]`
 - bayesian network corresponds to type/DSL

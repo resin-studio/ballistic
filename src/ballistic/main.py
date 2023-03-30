@@ -7,7 +7,10 @@ def parse_from_file(path):
     return parser.model_from_file(path)
 
 if __name__ == "__main__":
-    print(parse_from_file(util.resource('examples/hello.bll')))
+    program = parse_from_file(util.resource('examples/hello.bll'))
+    print('-----------------------------------------------------')
+    print("Greeting", ", ".join([to_greet.name for to_greet in program.to_greet]))
+    print('-----------------------------------------------------')
     # print(f'''
     # -------------------------
     # {util.resource("bll.tx")}
