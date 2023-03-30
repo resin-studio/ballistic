@@ -26,7 +26,7 @@
 - probabilities could look like `Pr[x + y = z | ... ]`
 - bayesian network corresponds to type/DSL
 - operations in DSL correspond to constraints in bayesian types  
-- bayesian network can be represented as constraint type: 
+- bayesian network can be represented as constraint type and an expression: 
     - x : a, z : c, y : {b | a, b, c : Sum} ~> y = z - x 
 - samples are represented as variables in types 
 - distributions are not in types directly
