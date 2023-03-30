@@ -33,14 +33,19 @@
 - restrict to basic arithmetic and real comparison operators
 
 ## synthesis approach 
+- have a default DSL consisting of some basic arithmetic and plate concepts
 - represent bayesian network as constraint type
-- compile constraint type into DSL
+- compile constraint type into DSL refinement
 - compile DSL into tree automaton
 - repeat:
     - search for tree that is accepted by tree automata (Syngar) 
     - construct model from tree and dataset with priors 
     - use stochastic variational inference to learn posteriors (Pyro)
 
+## Example
+- learn from time series unemployment data without specifying any structure
+    - automatically learn to use the plate concepts
+- learn from sparse data with bayesian constraint 
     
 
 ## TODO
