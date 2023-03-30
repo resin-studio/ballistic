@@ -22,34 +22,43 @@
     - may be parameterized by neural network
 
 ## language design
+- a distribution is an expression representing density values
+- primitive distribution constructors include: 
+    - `normal`
+    - `bernoulli`
 - a procedure is a function from scalars to a distribution 
     - ```
-    dist foo(x) =  
+    fun myDist(x) =  
         for m in Normal(0,1)
         for b in Norma(0,1)
         let y = m * x + b
         y
     ```
     - ```
-    dist foo(x) =  
+    fun myDist(x) =  
         bind Normal(0,1) as m =>
         bind Norma(0,1) as b =>
-        return m * x + b
+        wrap m * x + b
     ```
-- a script is a distribution constructed from primitive distributions
+- a script is a sequence of commands 
     ```
     for x in Normal(0,1) 
     for y in Normal(0,1) 
     let z = x + y 
     z
     ```
+- commands include
+    - `sample`
+    - `plot`
 - "evaluation" is really "sampling" a distribution
 - distribution function could look like `p(x : X) : [0, 1] = ...`
 - probabilities could look like `Pr[x + y = z | ... ]`
 - bayesian network corresponds to type/DSL
 - operations in DSL correspond to constraints in bayesian types  
+- data can be represented as special type
+    - `x : X -> {y : Y | (x, y) : data(file)}` 
 - bayesian network can be represented as constraint type and an expression: 
-    - x : a, z : c, y : {b | a, b, c : Sum} ~> y = z - x 
+    - `x : a, z : c, y : {b | a, b, c : Sum} ~> y = z - x`
 - samples are represented as variables in types 
 - distributions are not in types directly
 - bayesian network constraint can be compiled into a DSL refinement
@@ -57,6 +66,8 @@
     - All X . X -> (Some Y M B. Y :: Y = M * X + B)   
 - restrict to basic arithmetic and real comparison operators
 
+## synthesis goal 
+- synthesize distributional function from type/data
 ## synthesis approach 
 - have a default DSL consisting of some basic arithmetic and plate concepts
 - represent bayesian network as constraint type
