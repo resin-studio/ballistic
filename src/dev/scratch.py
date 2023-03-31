@@ -145,6 +145,7 @@ def foo(ica, r):
 print("---------------------------------------")
 print(foo(is_cont_africa[0], ruggedness[0]))
 print(len(foo(is_cont_africa[0], ruggedness[0])))
+print(foo(is_cont_africa[0], ruggedness[0]).mean().item())
 
 # svi_samples = predictive(is_cont_africa, ruggedness, log_gdp=None)
 # svi_gdp = svi_samples["obs"]

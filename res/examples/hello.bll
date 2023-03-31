@@ -1,1 +1,5 @@
-hello World, Solar System, Universe
+fun x =>
+    bind normal(0.0, 1.0) as m =>
+    bind normal(0.0, 1.0) as b =>
+    bind (coll m * x + b) as z =>
+    normal(z, 1.0)

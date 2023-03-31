@@ -1,5 +1,13 @@
 # ballistic
 
+## TODO 
+- define language for defining functions from scalars to distribution
+    - returns function to python, callable via python interface
+- define data constraint and synthesis/learning syntax that returns function 
+    - learn constants from data
+- define Sum/Product etc constraints
+    - learn architecture from constraints 
+
 ## glossary 
 - given an architecture y = mx + b 
 - observable variables: y, x
@@ -84,7 +92,7 @@
 - learn from sparse data with bayesian constraint 
     
 
-## TODO
+## Open questions 
 - should we narrow domain to time series modeling?
 - what are the possible architectures the language should use 
 - what are the possible distributions the language should use 
