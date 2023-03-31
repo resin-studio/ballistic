@@ -42,9 +42,9 @@ def generate_from_body(input_name, body):
 
 def generate_from_dist(name, dist):
     if dist.__class__.__name__ == "Normal":
-        return f'sample("{name}", Normal({generate_from_expr(dist.mean)}, {generate_from_expr(dist.sigma)}))'
+        return f'pyro.sample("{name}", dist.Normal({generate_from_expr(dist.mean)}, {generate_from_expr(dist.sigma)}))'
     else:
-        assert dist.__class__.__name__ == "Coll"
+        assert dist.__class__.__name__ == "Direct"
         return f'{generate_from_expr(dist.content)}'
 
 def generate_from_expr(expr):

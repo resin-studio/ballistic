@@ -1,18 +1,17 @@
 Function:
-  'fun' params+=Param[','] '=>' body=Body 
+  params+=Param[','] '=>' body=Body 
 ;
 
 Param: name = ID ;
 
 Body: Bind | Distribution ;
-Distribution: Normal | Coll ;
+Distribution: Normal | Direct ;
 
 Bind: 
-  'bind' src = Distribution 'as' name = ID '=>' dst = Body |
-  'bind' '(' src = Distribution ')' 'as' name = ID '=>' dst = Body 
+  src = Distribution '@' name = ID '=>' dst = Body
 ;
 Normal: 'normal' '(' mean=Expr ',' sigma=Expr ')' ;
-Coll: 'coll' content=Expr  ;
+Direct: 'direct' '(' content=Expr ')'  ;
   
 Expr: Prod (('+' | '-') Prod)* ;
 

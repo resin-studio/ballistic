@@ -1,5 +1,5 @@
-fun x =>
-    bind normal(0.0, 1.0) as m =>
-    bind normal(0.0, 1.0) as b =>
-    bind (coll m * x + b) as z =>
+x =>
+    normal(0.0, 1.0) @ m =>
+    normal(0.0, 1.0) @ b =>
+    direct(m * x + b) @ z =>
     normal(z, 1.0)
