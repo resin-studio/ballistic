@@ -126,8 +126,56 @@ sns.histplot(gamma_outside_africa.detach().cpu().numpy(), kde=True, stat="densit
 fig.suptitle("Density of Slope : log(GDP) vs. Terrain Ruggedness");
 plt.xlabel("Slope of regression line")
 plt.legend()
-plt.show()
+# plt.show()
 
+
+# construct the function to predict (forward evaluation)
+# functools.partial(simple_model, log_gdp=log_gdp)
+# num_samples is used to estimate the distribution at each input/output pair
+predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
+svi_samples = predictive(is_cont_africa[0:1], ruggedness[0:1], log_gdp=None)
+svi_gdp = svi_samples["obs"]
+# print(svi_gdp)
+# construct a function from scalar to distribution
+def foo(ica, r):
+    svi_samples = predictive(torch.tensor([ica]), torch.tensor([r]), log_gdp=None)
+    svi_gdp = svi_samples["obs"]
+    return svi_gdp[:, 0]
+
+print("---------------------------------------")
+print(foo(is_cont_africa[0], ruggedness[0]))
+print(len(foo(is_cont_africa[0], ruggedness[0])))
+
+# svi_samples = predictive(is_cont_africa, ruggedness, log_gdp=None)
+# svi_gdp = svi_samples["obs"]
+
+## note: len(is_cont_africa) == len(svi_gdp[0])
+
+# predictions = pd.DataFrame({
+#     "cont_africa": is_cont_africa,
+#     "rugged": ruggedness,
+#     "y_mean": svi_gdp.mean(0).detach().cpu().numpy(),
+#     "y_perc_5": svi_gdp.kthvalue(int(len(svi_gdp) * 0.05), dim=0)[0].detach().cpu().numpy(),
+#     "y_perc_95": svi_gdp.kthvalue(int(len(svi_gdp) * 0.95), dim=0)[0].detach().cpu().numpy(),
+#     "true_gdp": log_gdp,
+# })
+# african_nations = predictions[predictions["cont_africa"] == 1].sort_values(by=["rugged"])
+# non_african_nations = predictions[predictions["cont_africa"] == 0].sort_values(by=["rugged"])
+
+# fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), sharey=True)
+# fig.suptitle("Posterior predictive distribution with 90% CI", fontsize=16)
+
+# ax[0].plot(non_african_nations["rugged"], non_african_nations["y_mean"])
+# ax[0].fill_between(non_african_nations["rugged"], non_african_nations["y_perc_5"], non_african_nations["y_perc_95"], alpha=0.5)
+# ax[0].plot(non_african_nations["rugged"], non_african_nations["true_gdp"], "o")
+# ax[0].set(xlabel="Terrain Ruggedness Index", ylabel="log GDP (2000)", title="Non African Nations")
+
+# ax[1].plot(african_nations["rugged"], african_nations["y_mean"])
+# ax[1].fill_between(african_nations["rugged"], african_nations["y_perc_5"], african_nations["y_perc_95"], alpha=0.5)
+# ax[1].plot(african_nations["rugged"], african_nations["true_gdp"], "o")
+# ax[1].set(xlabel="Terrain Ruggedness Index", ylabel="log GDP (2000)", title="African Nations");
+
+# plt.show()
 
 
 # if __name__ == "__main__":
