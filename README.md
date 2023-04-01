@@ -4,6 +4,7 @@
 - define data constraint interface 
     - learn constants from data
 - return single and multi procedures, and posterior latent distributions 
+- generalize from scalars to tensors
 - define Sum/Product etc constraints
     - learn architecture from constraints 
 

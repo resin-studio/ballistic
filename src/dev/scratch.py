@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 
 import pyro
 
+import pyro.distributions as dist
+import pyro.distributions.constraints as constraints
+
 smoke_test = ('CI' in os.environ)
 assert pyro.__version__.startswith('1.8.4')
 
@@ -18,44 +21,40 @@ logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 # Set matplotlib settings
 # %matplotlib inline
-plt.style.use('default')
+# plt.style.use('default')
 
 
-# DATA
-DATA_URL = "https://d2hg8soec8ck9v.cloudfront.net/datasets/rugged_data.csv"
-data = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
-df = data[["cont_africa", "rugged", "rgdppc_2000"]]
+# # DATA
+# DATA_URL = "https://d2hg8soec8ck9v.cloudfront.net/datasets/rugged_data.csv"
+# data = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
+# df = data[["cont_africa", "rugged", "rgdppc_2000"]]
 
-df = df[np.isfinite(df.rgdppc_2000)]
-df["rgdppc_2000"] = np.log(df["rgdppc_2000"])
+# df = df[np.isfinite(df.rgdppc_2000)]
+# df["rgdppc_2000"] = np.log(df["rgdppc_2000"])
 
-train = torch.tensor(df.values, dtype=torch.float)
-is_cont_africa, ruggedness, log_gdp = train[:, 0], train[:, 1], train[:, 2]
+# train = torch.tensor(df.values, dtype=torch.float)
+# is_cont_africa, ruggedness, log_gdp = train[:, 0], train[:, 1], train[:, 2]
 
 
-# DATA PLOT
-fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), sharey=True)
-african_nations = df[df["cont_africa"] == 1]
-non_african_nations = df[df["cont_africa"] == 0]
-sns.scatterplot(x=non_african_nations["rugged"],
-                y=non_african_nations["rgdppc_2000"],
-                ax=ax[0])
-ax[0].set(xlabel="Terrain Ruggedness Index",
-          ylabel="log GDP (2000)",
-          title="Non African Nations")
-sns.scatterplot(x=african_nations["rugged"],
-                y=african_nations["rgdppc_2000"],
-                ax=ax[1])
-ax[1].set(xlabel="Terrain Ruggedness Index",
-          ylabel="log GDP (2000)",
-          title="African Nations");
+# # DATA PLOT
+# fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), sharey=True)
+# african_nations = df[df["cont_africa"] == 1]
+# non_african_nations = df[df["cont_africa"] == 0]
+# sns.scatterplot(x=non_african_nations["rugged"],
+#                 y=non_african_nations["rgdppc_2000"],
+#                 ax=ax[0])
+# ax[0].set(xlabel="Terrain Ruggedness Index",
+#           ylabel="log GDP (2000)",
+#           title="Non African Nations")
+# sns.scatterplot(x=african_nations["rugged"],
+#                 y=african_nations["rgdppc_2000"],
+#                 ax=ax[1])
+# ax[1].set(xlabel="Terrain Ruggedness Index",
+#           ylabel="log GDP (2000)",
+#           title="African Nations");
 
-# plt.show()
+# # plt.show()
 
-# imports
-
-import pyro.distributions as dist
-import pyro.distributions.constraints as constraints
 
 # # SIMPLE MODEL
 
@@ -99,53 +98,53 @@ adam = pyro.optim.Adam({"lr": 0.02})  # Consider decreasing learning rate.
 elbo = pyro.infer.Trace_ELBO()
 svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
 
-losses = []
-for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
-    loss = svi.step(is_cont_africa, ruggedness, log_gdp)
-    losses.append(loss)
-    if step % 100 == 0:
-        logging.info("Elbo loss: {}".format(loss))
+# losses = []
+# for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
+#     loss = svi.step(is_cont_africa, ruggedness, log_gdp)
+#     losses.append(loss)
+#     if step % 100 == 0:
+#         logging.info("Elbo loss: {}".format(loss))
 
-plt.figure(figsize=(5, 2))
-plt.plot(losses)
-plt.xlabel("SVI step")
-plt.ylabel("ELBO loss");
-# plt.show()
-
-
-# Sample from trained guide the learned latent variables/distributions
-with pyro.plate("samples", 800, dim=-1):
-    samples = auto_guide(is_cont_africa, ruggedness)
-
-gamma_within_africa = samples["bR"] + samples["bAR"]
-gamma_outside_africa = samples["bR"]
-
-fig = plt.figure(figsize=(10, 6))
-sns.histplot(gamma_within_africa.detach().cpu().numpy(), kde=True, stat="density", label="African nations")
-sns.histplot(gamma_outside_africa.detach().cpu().numpy(), kde=True, stat="density", label="Non-African nations", color="orange")
-fig.suptitle("Density of Slope : log(GDP) vs. Terrain Ruggedness");
-plt.xlabel("Slope of regression line")
-plt.legend()
-# plt.show()
+# plt.figure(figsize=(5, 2))
+# plt.plot(losses)
+# plt.xlabel("SVI step")
+# plt.ylabel("ELBO loss");
+# # plt.show()
 
 
-# construct the function to predict (forward evaluation)
-# functools.partial(simple_model, log_gdp=log_gdp)
-# num_samples is used to estimate the distribution at each input/output pair
-predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
-svi_samples = predictive(is_cont_africa[0:1], ruggedness[0:1], log_gdp=None)
-svi_gdp = svi_samples["obs"]
-# print(svi_gdp)
-# construct a function from scalar to distribution
-def foo(ica, r):
-    svi_samples = predictive(torch.tensor([ica]), torch.tensor([r]), log_gdp=None)
-    svi_gdp = svi_samples["obs"]
-    return svi_gdp[:, 0]
+# # Sample from trained guide the learned latent variables/distributions
+# with pyro.plate("samples", 800, dim=-1):
+#     samples = auto_guide(is_cont_africa, ruggedness)
 
-print("---------------------------------------")
-print(foo(is_cont_africa[0], ruggedness[0]))
-print(len(foo(is_cont_africa[0], ruggedness[0])))
-print(foo(is_cont_africa[0], ruggedness[0]).mean().item())
+# gamma_within_africa = samples["bR"] + samples["bAR"]
+# gamma_outside_africa = samples["bR"]
+
+# fig = plt.figure(figsize=(10, 6))
+# sns.histplot(gamma_within_africa.detach().cpu().numpy(), kde=True, stat="density", label="African nations")
+# sns.histplot(gamma_outside_africa.detach().cpu().numpy(), kde=True, stat="density", label="Non-African nations", color="orange")
+# fig.suptitle("Density of Slope : log(GDP) vs. Terrain Ruggedness");
+# plt.xlabel("Slope of regression line")
+# plt.legend()
+# # plt.show()
+
+
+# # construct the function to predict (forward evaluation)
+# # functools.partial(simple_model, log_gdp=log_gdp)
+# # num_samples is used to estimate the distribution at each input/output pair
+# predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
+# svi_samples = predictive(is_cont_africa[0:1], ruggedness[0:1], log_gdp=None)
+# svi_gdp = svi_samples["obs"]
+# # print(svi_gdp)
+# # construct a function from scalar to distribution
+# def foo(ica, r):
+#     svi_samples = predictive(torch.tensor([ica]), torch.tensor([r]), log_gdp=None)
+#     svi_gdp = svi_samples["obs"]
+#     return svi_gdp[:, 0]
+
+# print("---------------------------------------")
+# print(foo(is_cont_africa[0], ruggedness[0]))
+# print(len(foo(is_cont_africa[0], ruggedness[0])))
+# print(foo(is_cont_africa[0], ruggedness[0]).mean().item())
 
 # svi_samples = predictive(is_cont_africa, ruggedness, log_gdp=None)
 # svi_gdp = svi_samples["obs"]
@@ -181,3 +180,6 @@ print(foo(is_cont_africa[0], ruggedness[0]).mean().item())
 
 # if __name__ == "__main__":
 #     pass
+
+
+print(dist.Normal(0, 10).sample())

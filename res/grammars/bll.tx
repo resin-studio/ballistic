@@ -1,5 +1,9 @@
 Function:
-  params+=Param[','] '=>' body=Body 
+  params+=Param[','] '=>' (spec=Spec '~')? body=Body 
+;
+
+Spec:
+  '{' result=ID '|' args+=ID[','] ': data' '}'
 ;
 
 Param: name = ID ;
