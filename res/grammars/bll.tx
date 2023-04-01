@@ -9,12 +9,13 @@ Spec:
 Param: name = ID ;
 
 Body: Bind | Distribution ;
-Distribution: Normal | Direct ;
+Distribution: Normal | Uniform | Direct ;
 
 Bind: 
   src = Distribution '@' name = ID '=>' dst = Body
 ;
 Normal: 'normal' '(' mean=Expr ',' sigma=Expr ')' ;
+Uniform: 'uniform' '(' mean=Expr ',' sigma=Expr ')' ;
 Direct: 'direct' '(' content=Expr ')'  ;
   
 Expr: Prod (('+' | '-') Prod)* ;

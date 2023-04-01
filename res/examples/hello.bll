@@ -1,5 +1,9 @@
-x => {y | x, y : data} ~
-    normal(0.0, 1.0) @ m =>
-    normal(0.0, 1.0) @ b =>
-    direct(m * x + b) @ z =>
-    normal(z, 1.0)
+is_cont_africa, ruggedness => 
+{log_gdp | is_cont_africa, ruggedness, log_gdp : data} ~
+    normal(0., 10.) @ a =>
+    normal(0., 1.) @ b_a =>
+    normal(0., 1.) @ b_r =>
+    normal(0., 1.) @ b_ar =>
+    uniform(0., 10.) @ sigma =>
+    direct(a + b_a * is_cont_africa + b_r * ruggedness + b_ar * is_cont_africa * ruggedness) @ mean =>
+    normal(mean, sigma)
