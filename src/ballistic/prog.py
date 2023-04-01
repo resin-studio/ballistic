@@ -1,3 +1,7 @@
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Callable
+
 import util
 
 import logging
@@ -49,6 +53,7 @@ def generate_model_from_ast(ast):
     training = ''
     if ast.spec:
         training = f'''
+smoke_test = ('CI' in os.environ)
 losses = []
 for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
     loss = svi.step({", ".join(input_cols)}, {output_col}])
@@ -69,8 +74,14 @@ svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
 
 predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
 
-def predict({", ".join(param.name for param in ast.params)}):
-    global predictive
+def multi({", ".join(param.name for param in ast.params)}):
+    global predictive 
+    svi_samples = predictive({", ".join(param.name for param in ast.params)})
+    svi_gdp = svi_samples["obs"]
+    return svi_gdp
+
+def single({", ".join(param.name for param in ast.params)}):
+    global predictive 
     svi_samples = predictive({", ".join("torch.tensor([" + param.name + "])" for param in ast.params)})
     svi_gdp = svi_samples["obs"]
     return svi_gdp[:, 0]
@@ -101,12 +112,18 @@ def generate_model_from_dist(name, dist):
 def generate_model_from_expr(expr):
     return f'{expr}'
 
+@dataclass(frozen=True, eq=True)
+class Stoch:
+    multi : Callable 
+    single : Callable 
+
+
 def generate_function(file, data=None):
     program_ast = parse_from_file(file)
     python_str = generate_model_from_ast(program_ast)
     d = {'data' : data}
     exec(python_str, globals(), d)
-    return d['predict']
+    return Stoch(multi = d['multi'], single=d['single'])
 
 
 if __name__ == "__main__":
@@ -124,10 +141,13 @@ if __name__ == "__main__":
 
     train = torch.tensor(df.values, dtype=torch.float)
 
-    # print(train)
+    xs1 = (train[:,0])
+    xs2 = (train[:,1])
 
-    # hello = generate_function(util.resource('examples/hello.bll'), train)
-    # print(hello(5.0))
+    x1 = (train[45,0].item())
+    x2 = (train[45,1].item())
+    result = generate_function(util.resource('examples/hello.bll'), train)
+    print(result.single(x1, x2))
     # print(f'''
     # -------------------------
     # {util.resource("bll.tx")}
