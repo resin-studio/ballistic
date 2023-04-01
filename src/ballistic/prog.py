@@ -78,8 +78,8 @@ if __name__ == "__main__":
     # print(generate_model_from_ast(program))
     # print('-----------------------------------------------------')
 
-    predict = generate_function(util.resource('examples/hello.bll'))
-    print(predict(5.0))
+    hello = generate_function(util.resource('examples/hello.bll'))
+    print(hello(5.0))
     # print(f'''
     # -------------------------
     # {util.resource("bll.tx")}

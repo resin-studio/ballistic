@@ -1,10 +1,9 @@
 # ballistic
 
 ## TODO 
-- define language for defining functions from scalars to distribution
-    - returns function to python, callable via python interface
-- define data constraint and synthesis/learning syntax that returns function 
+- define data constraint interface 
     - learn constants from data
+- return single and multi procedures, and posterior latent distributions 
 - define Sum/Product etc constraints
     - learn architecture from constraints 
 
