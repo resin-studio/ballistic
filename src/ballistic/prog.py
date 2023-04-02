@@ -42,16 +42,15 @@ svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
 def generate_model_from_ast(ast):
     input_name = next(param.name for param in ast.params)
 
-    input_cols = [
-        f'data[:, {ast.spec.args.index(param.name)}]'
-        for param in ast.params 
-    ]
-
-    output_id = ast.spec.result 
-    output_col = f'data[:, {ast.spec.args.index(output_id)}'
-
     training = ''
     if ast.spec:
+        input_cols = [
+            f'data[:, {ast.spec.args.index(param.name)}]'
+            for param in ast.params 
+        ]
+
+        output_id = ast.spec.result 
+        output_col = f'data[:, {ast.spec.args.index(output_id)}'
         training = f'''
 smoke_test = ('CI' in os.environ)
 losses = []
@@ -141,13 +140,58 @@ if __name__ == "__main__":
 
     train = torch.tensor(df.values, dtype=torch.float)
 
-    xs1 = (train[:,0])
-    xs2 = (train[:,1])
+    ########################
+    result = generate_function(util.resource('examples/hello.bll'), train)
 
+    ########################
     x1 = (train[45,0].item())
     x2 = (train[45,1].item())
-    result = generate_function(util.resource('examples/hello.bll'), train)
-    print(result.single(x1, x2))
+    # print(result.single(x1, x2))
+
+    ########################
+    is_cont_africa = train[:,0]
+    ruggedness = train[:,1]
+    log_gdp  = train[:,2]
+
+    svi_gdp = result.multi(is_cont_africa, ruggedness)
+
+    predictions = pd.DataFrame({
+        "cont_africa": is_cont_africa,
+        "rugged": ruggedness,
+        "y_mean": svi_gdp.mean(0).detach().cpu().numpy(),
+        "y_perc_5": svi_gdp.kthvalue(int(len(svi_gdp) * 0.05), dim=0)[0].detach().cpu().numpy(),
+        "y_perc_95": svi_gdp.kthvalue(int(len(svi_gdp) * 0.95), dim=0)[0].detach().cpu().numpy(),
+        "true_gdp": log_gdp,
+    })
+    african_nations = predictions[predictions["cont_africa"] == 1].sort_values(by=["rugged"])
+    non_african_nations = predictions[predictions["cont_africa"] == 0].sort_values(by=["rugged"])
+
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), sharey=True)
+    fig.suptitle("Posterior predictive distribution with 90% CI", fontsize=16)
+
+    ax[0].plot(non_african_nations["rugged"], non_african_nations["y_mean"])
+    ax[0].fill_between(non_african_nations["rugged"], non_african_nations["y_perc_5"], non_african_nations["y_perc_95"], alpha=0.5)
+    ax[0].plot(non_african_nations["rugged"], non_african_nations["true_gdp"], "o")
+    ax[0].set(xlabel="Terrain Ruggedness Index", ylabel="log GDP (2000)", title="Non African Nations")
+
+    ax[1].plot(african_nations["rugged"], african_nations["y_mean"])
+    ax[1].fill_between(african_nations["rugged"], african_nations["y_perc_5"], african_nations["y_perc_95"], alpha=0.5)
+    ax[1].plot(african_nations["rugged"], african_nations["true_gdp"], "o")
+    ax[1].set(xlabel="Terrain Ruggedness Index", ylabel="log GDP (2000)", title="African Nations");
+
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
     # print(f'''
     # -------------------------
     # {util.resource("bll.tx")}
@@ -156,3 +200,13 @@ if __name__ == "__main__":
     # -------------------------
     # ''')
     # pass
+
+# is_cont_africa, ruggedness => 
+# {log_gdp | is_cont_africa, ruggedness, log_gdp : data} ~
+#     normal(0., 10.) @ a =>
+#     normal(0., 1.) @ b_a =>
+#     normal(0., 1.) @ b_r =>
+#     normal(0., 1.) @ b_ar =>
+#     uniform(0., 10.) @ sigma =>
+#     direct(a + b_a * is_cont_africa + b_r * ruggedness + b_ar * is_cont_africa * ruggedness) @ mean =>
+#     normal(mean, sigma)
