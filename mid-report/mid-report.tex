@@ -1,0 +1,126 @@
+\documentclass[runningheads]{llncs}
+
+% \documentclass{article}
+
+\usepackage[
+backend=biber,
+style=alphabetic,
+]{biblatex}
+
+\usepackage{mathpartir}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage{listings}
+
+\makeatletter % allow us to mention @-commands
+\def\arcr{\@arraycr}
+\makeatother
+
+\lstset{
+    % identifierstyle=\color{violet},
+    % textcolor=blue,
+    % keywordstyle=\color{blue},
+    keywordstyle=\text,
+    basicstyle=\ttfamily,
+    mathescape=true,
+    showspaces=false,
+    morekeywords={let, fix, in}
+}
+\usepackage[utf8]{inputenc}
+% \usepackage[T1]{fontenc}
+
+
+\title{Progress report: Guiding synthesis of stochastic programs with probabilistic and statistical types}
+\author{Thomas Logan}
+\institute{University of Texas at Austin}
+
+\begin{document}
+
+\maketitle
+
+\section{Initial progress}
+I have designed a very simple language for constructing distributions and learning posterior distributions for 
+latent variables/parameters from data. Learning from data is achieved by translating a simple program in my DSL into Pyro models and running Pyro's learning algorithms (stochastic variational inference).
+\newline
+
+\noindent
+The following program in my DSL represents a template that generates distributions modulo a dataset.
+\begin{lstlisting}
+is_cont_africa, ruggedness => {log_gdp | is_cont_africa, ruggedness, log_gdp : data}
+    a ~ normal(0., 10.) ; 
+    b_a ~ normal(0., 1.) ; 
+    b_r ~ normal(0., 1.) ; 
+    b_ar ~ normal(0., 1.) ;
+    sigma ~ uniform(0., 10.) ;
+    mean ~ direct(a + b_a * is_cont_africa + b_r * ruggedness + b_ar * is_cont_africa * ruggedness);
+    normal(mean, sigma)
+\end{lstlisting}
+
+\noindent
+The dataset is provided as input at the call site to compile/learn the program.
+\begin{lstlisting}[language=Python]
+DATA_URL = "https://d2hg8soec8ck9v.cloudfront.net/datasets/rugged_data.csv"
+data = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
+df = data[["cont_africa", "rugged", "rgdppc_2000"]]
+
+df = df[np.isfinite(df.rgdppc_2000)]
+df["rgdppc_2000"] = np.log(df["rgdppc_2000"])
+
+data = torch.tensor(df.values, dtype=torch.float)
+
+result = generate_function(util.resource('examples/program.bll'), data)
+\end{lstlisting}
+
+\noindent
+Generating the above program results in constructing the following Pyro code and executing its learning procedures (stochastic variational inference). 
+\begin{lstlisting}[language=Python]
+def model(is_cont_africa, ruggedness, obs=None):
+    a = pyro.sample("a", dist.Normal(0.0, 10.0))
+    b_a = pyro.sample("b_a", dist.Normal(0.0, 1.0))
+    b_r = pyro.sample("b_r", dist.Normal(0.0, 1.0))
+    b_ar = pyro.sample("b_ar", dist.Normal(0.0, 1.0))
+    sigma = pyro.sample("sigma", dist.Uniform(0.0, 10.0))
+    mean = a+b_a*is_cont_africa+b_r*ruggedness+b_ar*is_cont_africa*ruggedness
+    
+    with pyro.plate("data", len(is_cont_africa)):
+        return pyro.sample("obs", dist.Normal(mean, sigma), obs=obs)
+
+auto_guide = pyro.infer.autoguide.AutoNormal(model)
+adam = pyro.optim.Adam({"lr": 0.02})  # Consider decreasing learning rate.
+elbo = pyro.infer.Trace_ELBO()
+svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
+
+
+smoke_test = ('CI' in os.environ)
+losses = []
+for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
+    loss = svi.step(data[:, 0], data[:, 1], data[:, 2])
+    losses.append(loss)
+        
+predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
+
+def multi(is_cont_africa, ruggedness):
+    global predictive 
+    svi_samples = predictive(is_cont_africa, ruggedness)
+    svi_gdp = svi_samples["obs"]
+    return svi_gdp
+
+def single(is_cont_africa, ruggedness):
+    global predictive 
+    svi_samples = predictive(torch.tensor([is_cont_africa]), torch.tensor([ruggedness]))
+    svi_gdp = svi_samples["obs"]
+    return svi_gdp[:, 0]
+\end{lstlisting}
+
+\noindent
+Comparing the source code to the generated Pyro code illustrates the improved usability of the DSL. 
+
+\section{Next steps}
+The next steps are to enable automatic discovery of the program architecture. 
+I'm considering using tree-automata to search for programs. 
+Another issue is how to partially specify a subset of the DSL to explore. 
+Perhaps specifications could look like predicate constraints, but we would need to distinguish between
+constraints for learning parameters (the data) and constraints for specifying architecture. 
+
+\end{document}

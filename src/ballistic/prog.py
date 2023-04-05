@@ -23,22 +23,6 @@ parser = metamodel_from_file(util.resource('grammars/bll.tx'))
 def parse_from_file(path):
     return parser.model_from_file(path)
 
-def generate_training_from_spec(spec):
-    if not spec:
-        return f'''
-        '''
-    else:
-        output_id = spec.result 
-        output_col = spec.args.index(output_id)
-
-        return f'''
-auto_guide = pyro.infer.autoguide.AutoNormal(model)
-adam = pyro.optim.Adam({{"lr": 0.02}})  # Consider decreasing learning rate.
-elbo = pyro.infer.Trace_ELBO()
-svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
-
-        '''
-
 def generate_model_from_ast(ast):
     input_name = next(param.name for param in ast.params)
 
@@ -120,6 +104,9 @@ class Stoch:
 def generate_function(file, data=None):
     program_ast = parse_from_file(file)
     python_str = generate_model_from_ast(program_ast)
+    print('------------------------')
+    print(python_str)
+    print('------------------------')
     d = {'data' : data}
     exec(python_str, globals(), d)
     return Stoch(multi = d['multi'], single=d['single'])
