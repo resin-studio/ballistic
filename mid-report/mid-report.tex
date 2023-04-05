@@ -73,7 +73,7 @@ result = generate_function(util.resource('examples/program.bll'), data)
 \end{lstlisting}
 
 \noindent
-Generating the above program results in constructing the following Pyro code and executing its learning procedures (stochastic variational inference). 
+Generating the above program results in constructing the following Pyro code.
 \begin{lstlisting}[language=Python]
 def model(is_cont_africa, ruggedness, obs=None):
     a = pyro.sample("a", dist.Normal(0.0, 10.0))
@@ -81,24 +81,28 @@ def model(is_cont_africa, ruggedness, obs=None):
     b_r = pyro.sample("b_r", dist.Normal(0.0, 1.0))
     b_ar = pyro.sample("b_ar", dist.Normal(0.0, 1.0))
     sigma = pyro.sample("sigma", dist.Uniform(0.0, 10.0))
-    mean = a+b_a*is_cont_africa+b_r*ruggedness+b_ar*is_cont_africa*ruggedness
+    mean = 
+        a+
+        b_a*is_cont_africa+
+        b_r*ruggedness+
+        b_ar*is_cont_africa*ruggedness
     
     with pyro.plate("data", len(is_cont_africa)):
-        return pyro.sample("obs", dist.Normal(mean, sigma), obs=obs)
+        return pyro.sample("obs", 
+            dist.Normal(mean, sigma), obs=obs)
 
 auto_guide = pyro.infer.autoguide.AutoNormal(model)
-adam = pyro.optim.Adam({"lr": 0.02})  # Consider decreasing learning rate.
+adam = pyro.optim.Adam({"lr": 0.02}) 
 elbo = pyro.infer.Trace_ELBO()
 svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
 
-
-smoke_test = ('CI' in os.environ)
 losses = []
-for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
+for step in range(1000 if not smoke_test else 2): 
     loss = svi.step(data[:, 0], data[:, 1], data[:, 2])
     losses.append(loss)
         
-predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
+predictive = pyro.infer.Predictive(model, 
+    guide=auto_guide, num_samples=100)
 
 def multi(is_cont_africa, ruggedness):
     global predictive 
@@ -108,7 +112,10 @@ def multi(is_cont_africa, ruggedness):
 
 def single(is_cont_africa, ruggedness):
     global predictive 
-    svi_samples = predictive(torch.tensor([is_cont_africa]), torch.tensor([ruggedness]))
+    svi_samples = predictive(
+        torch.tensor([is_cont_africa]), 
+        torch.tensor([ruggedness])
+    )
     svi_gdp = svi_samples["obs"]
     return svi_gdp[:, 0]
 \end{lstlisting}
