@@ -1,12 +1,13 @@
 # ballistic
 
 ## TODO 
-- define data constraint interface 
-    - learn constants from data
-- return single and multi procedures, and posterior latent distributions 
+- define structural constraint interface 
+    - the constraint language is akin to the predicate universe in the AFTA (abstract finite tree automata) refinement work.
+    - however the constraints represent abstract bayesian network. ("abstract bayesian network automata"?)
+    - define Sum/Product etc constraints
+- synthesize architecture from constraints 
+    - akin to AFTA refinement algorithm 
 - generalize from scalars to tensors
-- define Sum/Product etc constraints
-    - learn architecture from constraints 
 
 ## glossary 
 - given an architecture y = mx + b 

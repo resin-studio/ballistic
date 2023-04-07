@@ -47,13 +47,18 @@ latent variables/parameters from data. Learning from data is achieved by transla
 \noindent
 The following program in my DSL represents a template that generates distributions modulo a dataset.
 \begin{lstlisting}
-is_cont_africa, ruggedness => {log_gdp | is_cont_africa, ruggedness, log_gdp : data}
+is_cont_africa, ruggedness => 
+{log_gdp | is_cont_africa, ruggedness, log_gdp : data}
     a ~ normal(0., 10.) ; 
     b_a ~ normal(0., 1.) ; 
     b_r ~ normal(0., 1.) ; 
     b_ar ~ normal(0., 1.) ;
     sigma ~ uniform(0., 10.) ;
-    mean ~ direct(a + b_a * is_cont_africa + b_r * ruggedness + b_ar * is_cont_africa * ruggedness);
+    mean ~ direct(
+        a + 
+        b_a * is_cont_africa + 
+        b_r * ruggedness + 
+        b_ar * is_cont_africa * ruggedness);
     normal(mean, sigma)
 \end{lstlisting}
 
