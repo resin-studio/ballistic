@@ -14,7 +14,7 @@
 - generalize from scalars to tensors
 
 # predicate language
-- maybe just simple ranges with comparison (<, <=) and conjunction (/\)?
+- maybe just simple ranges with comparison (<, <=, =) and conjunction (/\)?
 - or more expressive formulas with comparison (<, <=, =), arithmetic (+,*), and logic (\/, /\)?
 
 # algorithm 
