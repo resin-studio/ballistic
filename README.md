@@ -1,21 +1,16 @@
 # ballistic
 
-## TODO 
-- define structural predicate (constraint) interface 
+# structural constraint language
+- a constraint is a conjunction of predicates
+- a predicate is simply a range
+
+# tree automata
     - the concrete automaton represents the criterion that an expression evaluates to some value   
         - i.e. a verifier partially evaluated on the expected value
     - the abstract automaton represents the criterion that an expression evaluates to some type 
         - i.e. a verifier partially evaluated on the expected type 
-        - constructed from the examples,predicates, and grammar
+        - constructed from the data, structural constraint, and grammar
     - however the constraints represent abstract bayesian network. ("abstract bayesian network automata"?)
-    - define Sum/Product etc constraints
-- synthesize architecture from constraints 
-    - akin to AFTA refinement algorithm 
-- generalize from scalars to tensors
-
-# predicate language
-- maybe just simple ranges with comparison (<, <=, =) and conjunction (/\)?
-- or more expressive formulas with comparison (<, <=, =), arithmetic (+,*), and logic (\/, /\)?
 
 # algorithm 
 0. hyperparams: sampling number, fuel for iterations.
@@ -31,7 +26,7 @@
     - TODO: could we uses rows at the standard deviation boundary?
 8. learn a new predicate that improves fit. HOW?
     - TODO: maybe find a program that fits the standard deviation boundary to use as predicate?
-9. update predicate sets and goto 2 or terminate if out of fuel.
+9. update constraint with conjunction of new range and either goto 2 or terminate if out of fuel.
 
 ## glossary 
 - given an architecture y = mx + b 
