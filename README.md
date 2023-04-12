@@ -1,7 +1,7 @@
 # ballistic
 
 ## TODO 
-- define structural constraint/predicate interface 
+- define structural predicate (constraint) interface 
     - the concrete automaton represents the criterion that an expression evaluates to some value   
         - i.e. a verifier partially evaluated on the expected value
     - the abstract automaton represents the criterion that an expression evaluates to some type 
@@ -12,6 +12,26 @@
 - synthesize architecture from constraints 
     - akin to AFTA refinement algorithm 
 - generalize from scalars to tensors
+
+# predicate language
+- maybe just simple ranges with comparison (<, <=) and conjunction (/\)?
+- or more expressive formulas with comparison (<, <=, =), arithmetic (+,*), and logic (\/, /\)?
+
+# algorithm 
+0. hyperparams: sampling number, fuel for iterations.
+1. input: spec - (data and predicates) 
+2. construct automaton from grammar, data, and predicates 
+3. if automaton is empty then return none 
+4. get prog in automaton
+5. learn weights via pyro (i.e. stochastic variational inference) 
+6. compute "fitness" of program w.r.t data by sampling. HOW? 
+    - TODO: can we use standard deviation to measure this? 
+    - TODO: lookup statistical/machine learning methods for measuring fit
+7. Find rows in data with really bad fit. HOW? 
+    - TODO: could we uses rows at the standard deviation boundary?
+8. learn a new predicate that improves fit. HOW?
+    - TODO: maybe find a program that fits the standard deviation boundary to use as predicate?
+9. update predicate sets and goto 2 or terminate if out of fuel.
 
 ## glossary 
 - given an architecture y = mx + b 
