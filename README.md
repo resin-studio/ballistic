@@ -3,6 +3,10 @@
 ## TODO 
 - define structural constraint interface 
     - the constraint language is akin to the predicate universe in the AFTA (abstract finite tree automata) refinement work.
+    - the abstract finite tree automata (AFTA) is constructed from the predicate universe AND grammar, to efficiently represent the search space. 
+        - the automaton represents both the predicates/types AND the static/abstract semantics combined
+        - the concrete automaton represents the criterion that an expression evaluates to some value   
+        - the abstract automaton represents the criterion that an expression evaluates to some type 
     - however the constraints represent abstract bayesian network. ("abstract bayesian network automata"?)
     - define Sum/Product etc constraints
 - synthesize architecture from constraints 
