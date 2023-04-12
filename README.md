@@ -6,7 +6,9 @@
     - the abstract finite tree automata (AFTA) is constructed from the predicate universe AND grammar, to efficiently represent the search space. 
         - the automaton represents both the predicates/types AND the static/abstract semantics combined
         - the concrete automaton represents the criterion that an expression evaluates to some value   
+            - i.e. a verifier partially evaluated on the expected value
         - the abstract automaton represents the criterion that an expression evaluates to some type 
+            - i.e. a verifier partially evaluated on the expected type 
     - however the constraints represent abstract bayesian network. ("abstract bayesian network automata"?)
     - define Sum/Product etc constraints
 - synthesize architecture from constraints 
