@@ -30,8 +30,11 @@
         - can we use standard deviation to measure this? 
 7. Find rows in data with really bad fit / poor correctness. 
     - e.g. examples at the standard deviation boundary.
-8. construct predicate that contradicts/limits the examples with poor correctness.
-9. update constraint with conjunction of new range and either goto 2 or terminate if out of fuel.
+8. construct predicate that 
+    - contradicts/limits the examples with poor correctness.
+    - requires as simple or more simple program (decreasing description).
+9. terminate if no better solution can be found.
+10. update constraint with conjunction of new range and either goto 2 
 
 ## glossary 
 - given an architecture y = mx + b 
