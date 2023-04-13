@@ -20,8 +20,8 @@
 4. get prog in automaton
 5. learn weights via pyro (i.e. stochastic variational inference) 
 6. compute "fitness" of program w.r.t data by sampling.
-    - maximize: P(f)*Prod_i[P(out_i | f, in_i)]
-    - minimize: -log P(g) + Sum_i[-log(P(out_i | f, in_i))]
+    - maximize fitness: P(f)*Prod_i[P(out_i | f, in_i)]
+    - minimize unfitness: -log P(g) + Sum_i[-log(P(out_i | f, in_i))]
     - correctness model: probability increases exponentially as standard deviation increases?
     - simplicity model: probability decreases exponentially as length increases
     - reference: https://people.csail.mit.edu/asolar/SynthesisCourse/Lecture20.htm
@@ -31,8 +31,8 @@
 7. Find rows in data with really bad fit / poor correctness. 
     - e.g. examples at the standard deviation boundary.
 8. construct predicate that 
-    - contradicts/limits the examples with poor correctness.
-    - requires as simple or more simple program (decreasing description).
+    - requires next fitness probability >= current fitness prob.
+    - TODO: can abstract automata encode this constraint?
 9. terminate if no better solution can be found.
 10. update constraint with conjunction of new range and either goto 2 
 
