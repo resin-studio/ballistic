@@ -20,12 +20,14 @@
 4. get prog in automaton
 5. learn weights via pyro (i.e. stochastic variational inference) 
 6. compute "fitness" of program w.r.t data by sampling. HOW? 
-    - TODO: can we use standard deviation to measure this? 
-    - TODO: lookup statistical/machine learning methods for measuring fit
-7. Find rows in data with really bad fit. HOW? 
-    - TODO: could we uses rows at the standard deviation boundary?
-8. learn a new predicate that improves fit. HOW?
-    - TODO: maybe find a program that fits the standard deviation boundary to use as predicate?
+    - correctness model: probability increases exponentially as standard deviation increases?
+    - simplicity model: probability decreases exponentially as length increases
+    - TODO: 
+        - lookup statistical/machine learning methods for measuring fit
+        - can we use standard deviation to measure this? 
+7. Find rows in data with really bad fit / poor correctness. 
+    - e.g. examples at the standard deviation boundary.
+8. construct predicate that contradicts/limits the examples with poor correctness.
 9. update constraint with conjunction of new range and either goto 2 or terminate if out of fuel.
 
 ## glossary 
