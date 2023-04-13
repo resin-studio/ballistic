@@ -1,27 +1,33 @@
 # ballistic
 
 # structural constraint language
-- a constraint is a conjunction of predicates
-- a predicate is simply a range
+- a constraint is a conjunction of types 
+- a type is simply a range or a precise value
+
 
 # tree automata
     - the concrete automaton represents the criterion that an expression evaluates to some value   
         - i.e. a verifier partially evaluated on the expected value
     - the abstract automaton represents the criterion that an expression evaluates to some type 
         - i.e. a verifier partially evaluated on the expected type 
-        - constructed from the data, structural constraint, and grammar
+        - constructed from the data, and abstract semantics
+            - abstract semantics is constructed from set of types and grammar
+            - since the set of types is updated each iteration
+                - the abstracts semantics is parameterized over the set of types 
+        - the type for an expression in the automaton is the strongest conjunction of the set of types
+            - that is the supertype of (implied by) the abstract semantics that expression   
     - however the constraints represent abstract bayesian network. ("abstract bayesian network automata"?)
 
 # algorithm 
 0. hyperparams: sampling number, fuel for iterations.
-1. input: spec - (data and predicates) 
-2. construct automaton from grammar, data, and predicates 
+1. input: spec - (data and universe) 
+2. construct automaton from grammar, data, and universe 
 3. if automaton is empty then return none 
 4. get prog in automaton
 5. learn weights via pyro (i.e. stochastic variational inference) 
 6. compute "fitness" of program w.r.t data by sampling.
     - maximize fitness: P(f)*Prod_i[P(out_i | f, in_i)]
-    - minimize unfitness: -log P(g) + Sum_i[-log(P(out_i | f, in_i))]
+    - minimize inverse transform: -log P(g) + Sum_i[-log(P(out_i | f, in_i))]
     - correctness model: probability increases exponentially as standard deviation increases?
     - simplicity model: probability decreases exponentially as length increases
     - reference: https://people.csail.mit.edu/asolar/SynthesisCourse/Lecture20.htm
@@ -30,11 +36,11 @@
         - can we use standard deviation to measure this? 
 7. Find rows in data with really bad fit / poor correctness. 
     - e.g. examples at the standard deviation boundary.
-8. construct predicate that 
+8. construct type that 
     - requires next fitness probability >= current fitness prob.
     - TODO: can abstract automata encode this constraint?
 9. terminate if no better solution can be found.
-10. update constraint with conjunction of new range and either goto 2 
+10. update universe with conjunction of new type and goto 2 
 
 ## glossary 
 - given an architecture y = mx + b 
