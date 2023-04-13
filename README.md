@@ -1,9 +1,12 @@
 # ballistic
 
-# structural constraint language
-- a constraint is a conjunction of types 
-- a type is simply a range or a precise value
-
+# type universe
+- two categories of types:
+    - distributions
+    - expressions 
+- an expression type is simply a range or a precise value
+- a distribution type is a distribution name with expression types for its arguments
+- no dependent types or specifying relations/network structure 
 
 # tree automata
     - the concrete automaton represents the criterion that an expression evaluates to some value   
