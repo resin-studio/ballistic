@@ -19,9 +19,12 @@
 3. if automaton is empty then return none 
 4. get prog in automaton
 5. learn weights via pyro (i.e. stochastic variational inference) 
-6. compute "fitness" of program w.r.t data by sampling. HOW? 
+6. compute "fitness" of program w.r.t data by sampling.
+    - maximize: P(f)*Prod_i[P(out_i | f, in_i)]
+    - minimize: -log P(g) + Sum_i[-log(P(out_i | f, in_i))]
     - correctness model: probability increases exponentially as standard deviation increases?
     - simplicity model: probability decreases exponentially as length increases
+    - reference: https://people.csail.mit.edu/asolar/SynthesisCourse/Lecture20.htm
     - TODO: 
         - lookup statistical/machine learning methods for measuring fit
         - can we use standard deviation to measure this? 
