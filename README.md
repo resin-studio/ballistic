@@ -2,13 +2,13 @@
 
 # type universe
 - the type universe is the language of types
-- a type consists of of a base and a predicate  
+- either a type consists of of a base and a predicate, or a type is Top 
 - the base is with respect to a category in the grammar
 - the predicate could be a range or some way of narrowing the scope the type
 - the bases include input numbers, distributions, and reals
 
 # type abstraction
-- an abstraction is a set of types that may be used in verification
+- a type abstraction is a set of types that may be used in verification
 - the set of types is refined with each iteration 
 
 # concrete tree automata
@@ -31,11 +31,10 @@
 
 # algorithm 
 0. hyperparams: sampling number, fuel for iterations.
-1. input: data; initial set of types: Top, input = any value, and constants/terminals = their concrete evaluation 
-    TODO: do we need to restrict types to grammatical elements?
-2. construct automaton from grammar, data, and set of types 
-3. if automaton is empty then return none 
-4. get prog in automaton ranked by description length
+1. input: data, initial type abstraction: Top, InputBase, TerminalBase 
+2. construct automaton from grammar, data, and type abstraction 
+3. if automaton is empty then return none.  
+4. get prog in automaton ranked by ast-cost 
 5. learn weights via pyro (i.e. stochastic variational inference) 
 6. compute "fitness" of program w.r.t data by sampling.
     - maximize fitness: P(f)*Prod_i[P(out_i | f, in_i)]
@@ -46,13 +45,11 @@
     - TODO: 
         - lookup statistical/machine learning methods for measuring fit
         - can we use standard deviation to measure this? 
-7. Find rows in data with really bad fit / poor correctness. 
+7. terminate if no better solution can be found.
+8. find rows in data with really bad fit / poor correctness. 
     - e.g. examples at the standard deviation boundary.
-8. construct type that 
-    - requires next fitness probability >= current fitness prob.
-    - TODO: can abstract automata encode this type?
-9. terminate if no better solution can be found.
-10. update universe with conjunction of new type and goto 2 
+9. annotate program with types weakened by examples 
+10. update universe with conjunction of new weakened types from the annotated program and goto 2 
 
 ## glossary 
 - given an architecture y = mx + b 
