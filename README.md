@@ -1,5 +1,13 @@
 # ballistic
 
+# TODO
+- add plate concept
+    - syntax: seasonality # 52 ~ normal(0.0, 1.0)
+    - simply returns vector of samples
+    - operators: mean(plate), and index(plate, num)
+    - type universe: vector
+
+
 # type universe
 - the type universe is the language of types
 - either a type consists of of a base and a predicate, or a type is Top 

@@ -11,7 +11,7 @@ class Top: pass
 @dataclass(frozen=True, eq=True)
 class Dist:
     mean : Range | None 
-    devi : Range | None
+    devi : Range | None # n sample sigma = sqrt (Sum |x_i - mean|^2 / (n - 1))
     total : Range | None
 
 @dataclass(frozen=True, eq=True)

@@ -104,9 +104,9 @@ class Stoch:
 def generate_function(file, data=None):
     program_ast = parse_from_file(file)
     python_str = generate_model_from_ast(program_ast)
-    print('------------------------')
-    print(python_str)
-    print('------------------------')
+    # print('------------------------')
+    # print(python_str)
+    # print('------------------------')
     d = {'data' : data}
     exec(python_str, globals(), d)
     return Stoch(multi = d['multi'], single=d['single'])
