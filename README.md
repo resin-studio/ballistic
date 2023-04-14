@@ -1,32 +1,41 @@
 # ballistic
 
 # type universe
-- two categories of types:
-    - distributions
-    - expressions 
-- an expression type is simply a range or a precise value
-- a distribution type is a distribution name with expression types for its arguments
-- no dependent types or specifying relations/network structure 
+- the type universe is the language of types
+- a type consists of of a base and a predicate  
+- the base is with respect to a category in the grammar
+- the predicate could be a range or some way of narrowing the scope the type
+- the bases include input numbers, distributions, and reals
 
-# tree automata
-    - the concrete automaton represents the criterion that an expression evaluates to some value   
-        - i.e. a verifier partially evaluated on the expected value
-    - the abstract automaton represents the criterion that an expression evaluates to some type 
-        - i.e. a verifier partially evaluated on the expected type 
-        - constructed from the data, and abstract semantics
-            - abstract semantics is constructed from set of types and grammar
-            - since the set of types is updated each iteration
-                - the abstracts semantics is parameterized over the set of types 
-        - the type for an expression in the automaton is the strongest conjunction of the set of types
-            - that is the supertype of (implied by) the abstract semantics that expression   
-    - however the constraints represent abstract bayesian network. ("abstract bayesian network automata"?)
+# type abstraction
+- an abstraction is a set of types that may be used in verification
+- the set of types is refined with each iteration 
+
+# concrete tree automata
+- the concrete automaton verifies that an expression would evaluate to an acceptable value   
+
+# abstract semantics
+- the meaning of expressions in terms of types
+- applying an expression to an input is not included
+
+# abstract evaluation 
+- the meaning of expressions in terms of types evaluated on input
+- a simple wrapper around abstract semantics
+
+# abstract tree automata
+- the abstract automaton verifies that an expression would evaluate to an acceptable type 
+- constructed from the data, grammar, type abstraction, and abstract semantics 
+- the type for an expression in the automaton is an over-approximation the the abstract semantics of the expression
+    - more precisely, it is the strongest conjunction from the type abstraction 
+    - that is the supertype of the abstract semantics of that expression   
 
 # algorithm 
 0. hyperparams: sampling number, fuel for iterations.
-1. input: spec - (data and universe) 
-2. construct automaton from grammar, data, and universe 
+1. input: data; initial set of types: Top, input = any value, and constants/terminals = their concrete evaluation 
+    TODO: do we need to restrict types to grammatical elements?
+2. construct automaton from grammar, data, and set of types 
 3. if automaton is empty then return none 
-4. get prog in automaton
+4. get prog in automaton ranked by description length
 5. learn weights via pyro (i.e. stochastic variational inference) 
 6. compute "fitness" of program w.r.t data by sampling.
     - maximize fitness: P(f)*Prod_i[P(out_i | f, in_i)]
@@ -41,7 +50,7 @@
     - e.g. examples at the standard deviation boundary.
 8. construct type that 
     - requires next fitness probability >= current fitness prob.
-    - TODO: can abstract automata encode this constraint?
+    - TODO: can abstract automata encode this type?
 9. terminate if no better solution can be found.
 10. update universe with conjunction of new type and goto 2 
 
@@ -99,14 +108,14 @@
 - distribution function could look like `p(x : X) : [0, 1] = ...`
 - probabilities could look like `Pr[x + y = z | ... ]`
 - bayesian network corresponds to type/DSL
-- operations in DSL correspond to constraints in bayesian types  
+- operations in DSL correspond to types in bayesian types  
 - data can be represented as special type
     - `x : X -> {y : Y | (x, y) : data(file)}` 
-- bayesian network can be represented as constraint type and an expression: 
+- bayesian network can be represented as type type and an expression: 
     - `x : a, z : c, y : {b | a, b, c : Sum} ~> y = z - x`
 - samples are represented as variables in types 
 - distributions are not in types directly
-- bayesian network constraint can be compiled into a DSL refinement
+- bayesian network type can be compiled into a DSL refinement
 - the latent variables (M, B) are indicated by existential quantifiers
     - All X . X -> (Some Y M B. Y :: Y = M * X + B)   
 - restrict to basic arithmetic and real comparison operators
@@ -115,8 +124,8 @@
 - synthesize distributional function from type/data
 ## synthesis approach 
 - have a default DSL consisting of some basic arithmetic and plate concepts
-- represent bayesian network as constraint type
-- compile constraint type into DSL refinement
+- represent bayesian network as type type
+- compile type type into DSL refinement
 - compile DSL into tree automaton
 - repeat:
     - search for tree that is accepted by tree automata (Syngar) 
@@ -126,7 +135,7 @@
 ## Example
 - learn from time series unemployment data without specifying any structure
     - automatically learn to use the plate concepts
-- learn from sparse data with bayesian constraint 
+- learn from sparse data with bayesian type 
     
 
 ## Open questions 
