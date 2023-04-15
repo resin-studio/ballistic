@@ -8,18 +8,22 @@ Spec:
 
 Param: name = ID ;
 
-Body: Bind | Distribution ;
-Distribution: Normal | Uniform | Direct ;
+Body: Sample | Plate | Distribution ;
+Sample: name = ID '~' src = Distribution  ';' contin = Body ;
+Plate: name = ID '*' size = INT '~' src = Distribution  ';' contin = Body ;
 
-Bind: 
-  name = ID '~' src = Distribution  ';' dst = Body
-;
+Distribution: Normal | Lognorm | Uniform | Halfnorm | Direct ;
 Normal: 'normal' '(' mean=Expr ',' sigma=Expr ')' ;
+Lognorm: 'lognorm' '(' mean=Expr ',' sigma=Expr ')' ;
 Uniform: 'uniform' '(' mean=Expr ',' sigma=Expr ')' ;
-Direct: 'direct' '(' content=Expr ')'  ;
+Halfnorm: 'halfnorm' '(' scale=Expr ')' ;
+Direct: '@' '(' content=Expr ')'  ;
   
 Expr: Prod (('+' | '-') Prod)* ;
 
-Prod: Atom ('*' Atom)* ;
+Prod: Atom (('*' | '/' | '%') Atom)* ;
 
-Atom: ID | FLOAT | ('(' Expr ')') ;
+Atom: 
+  ID | FLOAT | ('(' Expr ')') | 
+  ID '[' Expr ']' | ID '.' 'mean' '(' ')'
+  ;

@@ -71,10 +71,17 @@ def single({", ".join(param.name for param in ast.params)}):
     '''
 
 def generate_model_from_body(input_name, body):
-    if body.__class__.__name__ == "Bind":
+    if body.__class__.__name__ == "Sample":
         return f'''
     {body.name} = {generate_model_from_dist(body.name, body.src)}
-    {generate_model_from_body(input_name, body.dst)}
+    {generate_model_from_body(input_name, body.contin)}
+        '''
+
+    elif body.__class__.__name__ == "Plate":
+        return f'''
+    with pyro.plate("{body.name}", {body.size}):
+        {body.name} = {generate_model_from_dist(body.name, body.src)}
+    {generate_model_from_body(input_name, body.contin)}
         '''
     else: 
         return f'''
@@ -86,8 +93,12 @@ def generate_model_from_dist(name, dist):
     obs_str = ', obs=obs' if name == "obs" else '' 
     if dist.__class__.__name__ == "Normal":
         return f'pyro.sample("{name}", dist.Normal({generate_model_from_expr(dist.mean)}, {generate_model_from_expr(dist.sigma)}){obs_str})'
+    elif dist.__class__.__name__ == "Lognorm":
+        return f'pyro.sample("{name}", dist.LogNormal({generate_model_from_expr(dist.mean)}, {generate_model_from_expr(dist.sigma)}){obs_str})'
     elif dist.__class__.__name__ == "Uniform":
         return f'pyro.sample("{name}", dist.Uniform({generate_model_from_expr(dist.mean)}, {generate_model_from_expr(dist.sigma)}){obs_str})'
+    elif dist.__class__.__name__ == "Halfnorm":
+        return f'pyro.sample("{name}", dist.HalfNormal({generate_model_from_expr(dist.scale)}){obs_str})'
     else:
         assert dist.__class__.__name__ == "Direct"
         return f'{generate_model_from_expr(dist.content)}'

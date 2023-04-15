@@ -1,0 +1,7 @@
+day => {claim | day, claim : data}
+    slope ~ normal(0., 1.) ; 
+    sd ~ halfnorm(1.) ; 
+    ws * 52 ~ normal(0., 1.) ; 
+    ms ~ @(ws - ws.mean()) ;
+    lognorm(slope * day + ms[day % 52], sd)
+    
