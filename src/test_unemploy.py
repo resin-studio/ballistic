@@ -53,29 +53,6 @@ if __name__ == "__main__":
     print('-----------------------------------------------------')
     # result = prog.generate_function(util.resource('examples/unemploy.bll'), data_train)
     #############################
-    ## GENERATED CODE EXECUTION TEST
-
-    # import pyro
-    # import pyro.distributions as dist
-    # import math
-    # from math import ceil, floor
-    
-    # def mean(o): return o.mean()
-    # def prob_sgt():
-    #     N = 100 
-    #     slope = pyro.sample('slope', dist.Normal(0.0, 1.0))
-    #     obs_sd = pyro.sample('obs_sd', dist.HalfNormal(1.0))
-    #     with pyro.plate('S', 52):
-    #         seasonality = pyro.sample('seasonality', dist.Normal(0.0, 1.0))
-    #         seasonality = seasonality - seasonality.mean()
-    #     with pyro.plate('N', N) as time:
-    #         log_y_hat = slope * time + seasonality.repeat(math.ceil(N / 52))[:N]
-    #         return pyro.sample('y', dist.LogNormal(log_y_hat, obs_sd))
-    # print(prob_sgt())
-
-    # rewrite (seasonality[time]) into seasonality.repeat(math.ceil(len(time) / len(seasonality)))[:len(time)]
-
-    #############################
 
     # # print(data_train)
     # time_data = data_train[:,0]
