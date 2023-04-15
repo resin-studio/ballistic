@@ -39,8 +39,8 @@ if __name__ == "__main__":
     result = prog.generate_function(util.resource('examples/gdp.bll'), data_train)
 
     ########################
-    x1 = (data_train[45,0].item())
-    x2 = (data_train[45,1].item())
+    # x1 = (data_train[45,0].item())
+    # x2 = (data_train[45,1].item())
     # print(result.single(x1, x2))
 
     ########################
@@ -49,7 +49,6 @@ if __name__ == "__main__":
     log_gdp  = data_train[:,2]
 
     svi_gdp = result.multi(is_cont_africa, ruggedness)
-
     predictions = pd.DataFrame({
         "cont_africa": is_cont_africa,
         "rugged": ruggedness,

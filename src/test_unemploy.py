@@ -34,9 +34,22 @@ if __name__ == "__main__":
     df = df[["Date", "Claims"]]
     # df = df.iloc[0:4,:]
     df["Date"] = df["Date"].map(lambda s : d(s).toordinal())
+    df["Claims"] = df["Claims"].map(lambda s : float(s))
     df = df[df["Date"] >= d('6/1/08').toordinal()][df["Date"] < d('6/1/19').toordinal()]
-    df = df.reset_index()
+    # df = df.reset_index()
 
-    # print(raw_data.to_string().split('\n')[0:3])
-    print(df.head(100))
-    # df = raw_data[["cont_africa", "rugged", "rgdppc_2000"]]
+    # print(df.head(100))
+
+    print(df.values)
+
+    data_train = torch.tensor(df.values, dtype=torch.float)
+    time_data = data_train[:,0]
+    claim_data = data_train[:,1]
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), sharey=True)
+    fig.suptitle("Unemployment claims over time", fontsize=16)
+
+    ax.plot(claim_data, "x")
+    ax.set(xlabel="Time", ylabel="Unemployment claims", title="Washington State")
+
+    plt.show()
