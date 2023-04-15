@@ -18,16 +18,17 @@ Lognorm: 'lognorm' '(' mean=Expr ',' sigma=Expr ')' ;
 Uniform: 'uniform' '(' mean=Expr ',' sigma=Expr ')' ;
 Halfnorm: 'halfnorm' '(' scale=Expr ')' ;
 Direct: '@' '(' content=Expr ')'  ;
-  
-Expr: Prod (('+' | '-') Prod)* ;
 
-Prod: Atom (('*' | '/' | '%') Atom)* ;
+Expr: base=Prod exts*=Ext;
+Ext: op = EOp arg=Prod;
+EOp: '+' | '-' ;
 
-Atom: 
-  ('(' Expr ')') | 
-  'mean' '(' Expr ')' |
-  'ceil' '(' Expr ')' |
-  'floor' '(' Expr ')' |
-  ID '[' Expr ']' | 
-  ID | FLOAT
-  ;
+Prod: base=Atom factors*=Factor;
+Factor: op = POp arg=Atom ;
+POp: '*' | '/';
+
+
+Atom: Paren | Mean | ID | FLOAT ;
+
+Paren:  '(' content=Expr ')' ;
+Mean: 'mean' '(' arg=Expr ')' ;

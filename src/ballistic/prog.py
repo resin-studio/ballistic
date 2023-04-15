@@ -89,7 +89,7 @@ def generate_model_from_body(input_name, body):
         '''
     else: 
         return f'''
-    with pyro.plate("data", len({input_name})) as {input_name}:
+    with pyro.plate("data", len({input_name})):
         return {generate_model_from_dist("obs", body)}
         '''
 
@@ -108,7 +108,28 @@ def generate_model_from_dist(name, dist):
         return f'{generate_model_from_expr(dist.content)}'
 
 def generate_model_from_expr(expr):
-    return f'{expr}'
+    base_str = generate_model_from_prod(expr.base)
+    exts_str = ''
+    for ext in expr.exts:
+        exts_str += (f' {ext.op} ' + generate_model_from_prod(ext.arg))
+        
+    return base_str + exts_str 
+
+def generate_model_from_prod(prod):
+    base_str = generate_model_from_atom(prod.base)
+    factors_str = ''
+    for factor in prod.factors:
+        factors_str += (f' {factor.op} ' + generate_model_from_atom(factor.arg))
+        
+    return base_str + factors_str 
+
+def generate_model_from_atom(atom):
+    if atom.__class__.__name__ == "Paren":
+        return '(' + generate_model_from_expr(atom.content) + ')'
+    elif atom.__class__.__name__ == "Mean":
+        return 'mean(' + generate_model_from_expr(atom.arg) + ')'
+    else:
+        return f'{atom}'
 
 @dataclass(frozen=True, eq=True)
 class Stoch:
