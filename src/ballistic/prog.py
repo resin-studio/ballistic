@@ -18,6 +18,10 @@ import pyro.distributions as dist
 import pyro.distributions.constraints as constraints
 
 from textx import metamodel_from_file
+
+from math import ceil, floor
+def mean(o): return o.mean()
+
 parser = metamodel_from_file(util.resource('grammars/bll.tx'))
 
 def parse_from_file(path):
@@ -60,14 +64,14 @@ predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
 def multi({", ".join(param.name for param in ast.params)}):
     global predictive 
     svi_samples = predictive({", ".join(param.name for param in ast.params)})
-    svi_gdp = svi_samples["obs"]
-    return svi_gdp
+    svi_obs = svi_samples["obs"]
+    return svi_obs
 
 def single({", ".join(param.name for param in ast.params)}):
     global predictive 
     svi_samples = predictive({", ".join("torch.tensor([" + param.name + "])" for param in ast.params)})
-    svi_gdp = svi_samples["obs"]
-    return svi_gdp[:, 0]
+    svi_obs = svi_samples["obs"]
+    return svi_obs[:, 0]
     '''
 
 def generate_model_from_body(input_name, body):
@@ -85,7 +89,7 @@ def generate_model_from_body(input_name, body):
         '''
     else: 
         return f'''
-    with pyro.plate("data", len({input_name})):
+    with pyro.plate("data", len({input_name})) as {input_name}:
         return {generate_model_from_dist("obs", body)}
         '''
 
@@ -115,9 +119,9 @@ class Stoch:
 def generate_function(file, data=None):
     program_ast = parse_from_file(file)
     python_str = generate_model_from_ast(program_ast)
-    # print('------------------------')
-    # print(python_str)
-    # print('------------------------')
+    print('--- Generated Python: Start ---')
+    print(python_str)
+    print('--- Generated Python: End -----')
     d = {'data' : data}
     exec(python_str, globals(), d)
     return Stoch(multi = d['multi'], single=d['single'])

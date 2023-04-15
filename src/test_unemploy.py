@@ -44,25 +44,30 @@ if __name__ == "__main__":
     data_train = torch.tensor(df.values, dtype=torch.float)
 
     #############################
+
+    # program = prog.parse_from_file(util.resource('examples/unemploy.bll'))
+    # print(program)
+    # print('-----------------------------------------------------')
+    # print(generate_model_from_ast(program))
+    # print('-----------------------------------------------------')
     result = prog.generate_function(util.resource('examples/unemploy.bll'), data_train)
     #############################
 
+    # # print(data_train)
+    # time_data = data_train[:,0]
+    # claim_data = data_train[:,1]
 
-    # print(data_train)
-    time_data = data_train[:,0]
-    claim_data = data_train[:,1]
+    # prediction = result.multi(time_data)
+    # prediction_mean = prediction.mean(0).detach().cpu().numpy() 
+    # prediction_lower = prediction.kthvalue(int(len(prediction) * 0.05), dim=0)[0].detach().cpu.numpy()
+    # prediction_upper = prediction.kthvalue(int(len(prediction) * 0.95), dim=0)[0].detach().cpu.numpy()
 
-    prediction = result.multi(time_data)
-    prediction_mean = prediction.mean(0).detach().cpu().numpy() 
-    prediction_lower = prediction.kthvalue(int(len(prediction) * 0.05), dim=0)[0].detach().cpu.numpy()
-    prediction_upper = prediction.kthvalue(int(len(prediction) * 0.95), dim=0)[0].detach().cpu.numpy()
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), sharey=True)
+    # fig.suptitle("Unemployment claims over time", fontsize=16)
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), sharey=True)
-    fig.suptitle("Unemployment claims over time", fontsize=16)
+    # ax.plot(time_data, prediction_mean)
+    # ax.fill_between(time_data, prediction_lower, prediction_upper, alpha=0.5)
+    # ax.plot(time_data, claim_data, "x")
+    # ax.set(xlabel="Time", ylabel="Unemployment claims", title="Washington State")
 
-    ax.plot(time_data, prediction_mean)
-    ax.fill_between(time_data, prediction_lower, prediction_upper, alpha=0.5)
-    ax.plot(time_data, claim_data, "x")
-    ax.set(xlabel="Time", ylabel="Unemployment claims", title="Washington State")
-
-    plt.show()
+    # plt.show()

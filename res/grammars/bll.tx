@@ -10,7 +10,7 @@ Param: name = ID ;
 
 Body: Sample | Plate | Distribution ;
 Sample: name = ID '~' src = Distribution  ';' contin = Body ;
-Plate: name = ID '*' size = INT '~' src = Distribution  ';' contin = Body ;
+Plate: name = ID '#' size = INT '~' src = Distribution  ';' contin = Body ;
 
 Distribution: Normal | Lognorm | Uniform | Halfnorm | Direct ;
 Normal: 'normal' '(' mean=Expr ',' sigma=Expr ')' ;
@@ -24,6 +24,10 @@ Expr: Prod (('+' | '-') Prod)* ;
 Prod: Atom (('*' | '/' | '%') Atom)* ;
 
 Atom: 
-  ID | FLOAT | ('(' Expr ')') | 
-  ID '[' Expr ']' | ID '.' 'mean' '(' ')'
+  ('(' Expr ')') | 
+  'mean' '(' Expr ')' |
+  'ceil' '(' Expr ')' |
+  'floor' '(' Expr ')' |
+  ID '[' Expr ']' | 
+  ID | FLOAT
   ;
