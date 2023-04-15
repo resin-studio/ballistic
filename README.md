@@ -1,15 +1,13 @@
 # ballistic
 
 # TODO
-- read in unemployment data
-- plot unemployment data
-- construct pyro model
-- plot pyro model against data
-- add plate concept
+- add plate concept to DSL
     - syntax: seasonality # 52 ~ normal(0.0, 1.0)
     - simply returns vector of samples
     - operators: mean(plate), and index(plate, num)
-    - type universe: vector
+- define pyro translation of plate concepit 
+- plot pyro model against data
+- add vector concept to type universe
 
 
 # type universe
