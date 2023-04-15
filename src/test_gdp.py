@@ -27,26 +27,26 @@ if __name__ == "__main__":
     # print('-----------------------------------------------------')
 
     DATA_URL = "https://d2hg8soec8ck9v.cloudfront.net/datasets/rugged_data.csv"
-    data = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
-    df = data[["cont_africa", "rugged", "rgdppc_2000"]]
+    raw_data = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
+    df = raw_data[["cont_africa", "rugged", "rgdppc_2000"]]
 
     df = df[np.isfinite(df.rgdppc_2000)]
     df["rgdppc_2000"] = np.log(df["rgdppc_2000"])
 
-    train = torch.tensor(df.values, dtype=torch.float)
+    data_train = torch.tensor(df.values, dtype=torch.float)
 
     ########################
-    result = prog.generate_function(util.resource('examples/hello.bll'), train)
+    result = prog.generate_function(util.resource('examples/gdp.bll'), data_train)
 
     ########################
-    x1 = (train[45,0].item())
-    x2 = (train[45,1].item())
+    x1 = (data_train[45,0].item())
+    x2 = (data_train[45,1].item())
     # print(result.single(x1, x2))
 
     ########################
-    is_cont_africa = train[:,0]
-    ruggedness = train[:,1]
-    log_gdp  = train[:,2]
+    is_cont_africa = data_train[:,0]
+    ruggedness = data_train[:,1]
+    log_gdp  = data_train[:,2]
 
     svi_gdp = result.multi(is_cont_africa, ruggedness)
 

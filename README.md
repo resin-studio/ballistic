@@ -1,6 +1,10 @@
 # ballistic
 
 # TODO
+- read in unemployment data
+- plot unemployment data
+- construct pyro model
+- plot pyro model against data
 - add plate concept
     - syntax: seasonality # 52 ~ normal(0.0, 1.0)
     - simply returns vector of samples
