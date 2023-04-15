@@ -28,7 +28,8 @@ Factor: op = POp arg=Atom ;
 POp: '*' | '/';
 
 
-Atom: Paren | Mean | ID | FLOAT ;
+Atom: Paren | Mean | Project | ID | FLOAT ;
 
 Paren:  '(' content=Expr ')' ;
-Mean: 'mean' '(' arg=Expr ')' ;
+Mean: 'mean' '(' vector=Expr ')' ;
+Project: 'project' '(' vector=Expr ',' index = Expr ')' ;

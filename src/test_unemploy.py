@@ -46,7 +46,7 @@ if __name__ == "__main__":
     #############################
 
     print('-----------------------------------------------------')
-    program = prog.parse_from_file(util.resource('examples/arith.bll'))
+    program = prog.parse_from_file(util.resource('examples/unemploy.bll'))
     print(program)
     print('-----------------------------------------------------')
     print(prog.generate_model_from_ast(program))

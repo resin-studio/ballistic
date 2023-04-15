@@ -3,4 +3,4 @@ day => {claim | day, claim : data}
     sd ~ halfnorm(1.) ; 
     ws # 52 ~ normal(0., 1.) ; 
     ms ~ @(ws - mean(ws)) ;
-    lognorm(slope * day + ms[ceil(day % 52)], sd)
+    lognorm(slope * day + project(ms, day), sd)

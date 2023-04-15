@@ -127,7 +127,11 @@ def generate_model_from_atom(atom):
     if atom.__class__.__name__ == "Paren":
         return '(' + generate_model_from_expr(atom.content) + ')'
     elif atom.__class__.__name__ == "Mean":
-        return 'mean(' + generate_model_from_expr(atom.arg) + ')'
+        return 'mean(' + generate_model_from_expr(atom.vector) + ')'
+    elif atom.__class__.__name__ == "Project":
+        v = generate_model_from_expr(atom.vector)
+        i = generate_model_from_expr(atom.index)
+        return f'{v}.repeat(math.ceil(len({i}) / len({v})))[:len({i})]'
     else:
         return f'{atom}'
 
