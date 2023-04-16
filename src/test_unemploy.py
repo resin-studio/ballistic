@@ -25,50 +25,53 @@ def d(s):
     return (datetime.strptime(s, '%m/%d/%y')).date()
 
 if __name__ == "__main__":
-    # print(d('1/1/05').toordinal())
-    # print(d('1/2/05').toordinal())
+    ##############################
+    ## print('-----------------------------------------------------')
+    ## program = prog.parse_from_file(util.resource('examples/unemploy.bll'))
+    ## print(program)
+    ## print('-----------------------------------------------------')
+    ## print(prog.generate_model_from_ast(program))
+    ## print('-----------------------------------------------------')
+    ## print(d('1/1/05').toordinal())
+    ## print(d('1/2/05').toordinal())
+    ## df = df.iloc[0:4,:]
+    ## print(df.head(4))
+    ## print(df.values)
+    ##############################
 
-    # DATA_URL = util.resource("data/unemployment_claims.csv")
-    # df = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
-    # df = df[df["County/Area"] == "WASHINGTON STATE"][df["Claim Type"] == "Initial claims"]
-    # df["Date"] = df["Date"].map(lambda s : d(s).toordinal())
-    # df = df[df["Date"] >= d('6/1/08').toordinal()][df["Date"] < d('6/1/19').toordinal()]
-    # df["Date"] = df["Date"].map(lambda n : n - d('6/1/08').toordinal())
-    # df["Claims"] = df["Claims"].map(lambda s : float(s))
-    # df = df[["Date", "Claims"]]
+    DATA_URL = util.resource("data/unemployment_claims.csv")
+    df = pd.read_csv(DATA_URL, encoding="ISO-8859-1")
+    df = df[df["County/Area"] == "WASHINGTON STATE"][df["Claim Type"] == "Initial claims"]
+    df["Date"] = df["Date"].map(lambda s : d(s).toordinal())
+    df = df[df["Date"] >= d('6/1/08').toordinal()][df["Date"] < d('6/1/19').toordinal()]
+    df["Date"] = df["Date"].map(lambda n : n - d('6/1/08').toordinal())
+    df["Claims"] = df["Claims"].map(lambda s : float(s))
+    # df = df[["Claims"]]
+    df = (df.reset_index().reset_index()[["level_0", "Claims"]])
 
-    # # df = df.iloc[0:4,:]
-    # # print(df.head(4))
-    # # print(df.values)
 
-    # data_train = torch.tensor(df.values, dtype=torch.float)
+    data = torch.tensor(df.values, dtype=torch.float)
 
-    #############################
+    #########################
+    result = prog.generate_function(util.resource('examples/unemploy.bll'), data)
+    #########################
 
-    print('-----------------------------------------------------')
-    program = prog.parse_from_file(util.resource('examples/unemploy.bll'))
-    print(program)
-    print('-----------------------------------------------------')
-    print(prog.generate_model_from_ast(program))
-    print('-----------------------------------------------------')
-    # result = prog.generate_function(util.resource('examples/unemploy.bll'), data_train)
-    #############################
+    time_data = data[:,0]
+    claim_data = data[:,1]
 
-    # # print(data_train)
-    # time_data = data_train[:,0]
-    # claim_data = data_train[:,1]
-
-    # prediction = result.multi(time_data)
-    # prediction_mean = prediction.mean(0).detach().cpu().numpy() 
+    prediction = result.multi(time_data)
+    prediction_mean = prediction.mean(0).detach().cpu().numpy() 
+    print(prediction_mean)
+    print(claim_data)
     # prediction_lower = prediction.kthvalue(int(len(prediction) * 0.05), dim=0)[0].detach().cpu.numpy()
     # prediction_upper = prediction.kthvalue(int(len(prediction) * 0.95), dim=0)[0].detach().cpu.numpy()
 
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), sharey=True)
-    # fig.suptitle("Unemployment claims over time", fontsize=16)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), sharey=True)
+    fig.suptitle("Unemployment claims over time", fontsize=16)
 
-    # ax.plot(time_data, prediction_mean)
+    ax.plot(time_data, prediction_mean)
     # ax.fill_between(time_data, prediction_lower, prediction_upper, alpha=0.5)
-    # ax.plot(time_data, claim_data, "x")
-    # ax.set(xlabel="Time", ylabel="Unemployment claims", title="Washington State")
+    ax.plot(time_data, claim_data, "x")
+    ax.set(xlabel="Time", ylabel="Unemployment claims", title="Washington State")
 
-    # plt.show()
+    plt.show()

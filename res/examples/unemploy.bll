@@ -1,6 +1,6 @@
-day => {claim | day, claim : data}
+month => {claim | month, claim : data}
     slope ~ normal(0., 1.) ; 
     sd ~ halfnorm(1.) ; 
-    ws # 52 ~ normal(0., 1.) ; 
-    ms ~ @(ws - mean(ws)) ;
-    lognorm(slope * day + project(ms, day), sd)
+    ms # 12 ~ normal(0., 1.) ; 
+    sms ~ @(ms - mean(ms)) ;
+    lognorm(slope * month + project(sms, month), sd)

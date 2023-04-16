@@ -17,10 +17,9 @@ import pyro
 import pyro.distributions as dist
 import pyro.distributions.constraints as constraints
 
-from textx import metamodel_from_file
+import math
 
-from math import ceil, floor
-def mean(o): return o.mean()
+from textx import metamodel_from_file
 
 parser = metamodel_from_file(util.resource('grammars/bll.tx'))
 
@@ -59,7 +58,7 @@ svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
 
 {training}
 
-predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=100)
+predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=600)
 
 def multi({", ".join(param.name for param in ast.params)}):
     global predictive 
@@ -83,7 +82,7 @@ def generate_model_from_body(input_name, body):
 
     elif body.__class__.__name__ == "Plate":
         return f'''
-    with pyro.plate("{body.name}", {body.size}):
+    with pyro.plate("{body.name}_plate", {body.size}):
         {body.name} = {generate_model_from_dist(body.name, body.src)}
     {generate_model_from_body(input_name, body.contin)}
         '''
@@ -127,11 +126,11 @@ def generate_model_from_atom(atom):
     if atom.__class__.__name__ == "Paren":
         return '(' + generate_model_from_expr(atom.content) + ')'
     elif atom.__class__.__name__ == "Mean":
-        return 'mean(' + generate_model_from_expr(atom.vector) + ')'
+        return generate_model_from_expr(atom.vector) + '.mean()'
     elif atom.__class__.__name__ == "Project":
         v = generate_model_from_expr(atom.vector)
         i = generate_model_from_expr(atom.index)
-        return f'{v}.repeat(math.ceil(len({i}) / len({v})))[:len({i})]'
+        return f'{v}.repeat(math.ceil(len({i})/len({v})))[:len({i})]'
     else:
         return f'{atom}'
 
