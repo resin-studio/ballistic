@@ -1,12 +1,9 @@
 # ballistic
 
 # TODO
-- add plate concept to DSL
-    - syntax: seasonality # 52 ~ normal(0.0, 1.0)
-    - simply returns vector of samples
-    - operators: mean(plate), and index(plate, num)
-- define pyro translation of plate concepit 
-- plot pyro model against data
+- reproduce time series unemployment claim example
+    - why doesn't the line fit the data properly?
+    - does the log transform help/hurt? 
 - add vector concept to type universe
 
 

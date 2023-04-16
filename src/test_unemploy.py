@@ -44,11 +44,12 @@ if __name__ == "__main__":
     df = df[df["County/Area"] == "WASHINGTON STATE"][df["Claim Type"] == "Initial claims"]
     df["Date"] = df["Date"].map(lambda s : d(s).toordinal())
     df = df[df["Date"] >= d('1/1/08').toordinal()][df["Date"] < d('11/1/19').toordinal()]
-    # df["Date"] = df["Date"].map(lambda n : n - d('6/1/08').toordinal())
     df["Claims"] = df["Claims"].map(lambda s : float(s))
     df = df[np.isfinite(df["Claims"])]
-    df["Claims"] = np.log(df["Claims"])
-    # df = df[["Claims"]]
+    # df["Claims"] = np.log(df["Claims"])
+    # df["Date"] = np.log(df["Date"])
+    # df = df[["Date", "Claims"]]
+    # df["Date"] = df["Date"].map(lambda n : n - d('6/1/08').toordinal())
     df = (df.reset_index().reset_index()[["level_0", "Claims"]])
 
 
