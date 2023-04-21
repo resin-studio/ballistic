@@ -48,7 +48,6 @@ df = df[df["Date"] >= d('10/1/08').toordinal()][df["Date"] < d('11/1/19').toordi
 df["Claims"] = df["Claims"].map(lambda s : float(s))
 df = df[np.isfinite(df["Claims"])]
 df["Claims"] = np.log(df["Claims"])
-# df["Date"] = np.log(df["Date"])
 # df = df[["Date", "Claims"]]
 # df["Date"] = df["Date"].map(lambda n : n - d('6/1/08').toordinal())
 df = (df.reset_index().reset_index()[["level_0", "Claims"]])
@@ -67,7 +66,7 @@ def test_simple_prediction():
     def model(month, obs=None):
         slope = pyro.param("slope", torch.tensor(0.))
         intercept = pyro.param("intercept", torch.tensor(0.))
-        scale = 0.1
+        scale = .1
         # scale = pyro.param("scale", torch.tensor(0.1))
         # scale = pyro.param("scale", lambda: torch.ones(()))
         
@@ -125,23 +124,27 @@ def test_simple_prediction():
 
     plt.show()
 
+def model(month, obs=None):
+    slope = pyro.param("slope", torch.tensor(0.))
+    # TODO: why does tensor(1.) result in positive slope?
+    # slope = pyro.param("slope", torch.tensor(1.))
+    # TODO: why does normal choose a positive slope?
+    # TODO: consider if multivariate is being used properly
+    # slope = pyro.sample("slope", dist.Normal(0.0, 1.0))
+    intercept = pyro.param("intercept", torch.tensor(0.)) 
+    # scale = pyro.sample("sd", dist.HalfNormal(1.0))
+    scale = 0.1
+    # with pyro.plate("ms_plate", 12):
+    #     sms = pyro.sample("ms", dist.Normal(0.0, 1.0))
+    #     sms = sms - sms.mean()
+    
+    with pyro.plate("data", len(month)):
+        # intercept = sms.repeat(math.ceil(len(month)/len(sms)))[:len(month)]
+        return pyro.sample("obs", dist.LogNormal(slope * month + intercept, scale), obs=obs)
+
 
 def test_slope():
 
-    def model(month, obs=None):
-        slope = pyro.sample("slope", dist.Normal(0.0, 1.0))
-        scale = pyro.sample("sd", dist.HalfNormal(1.0))
-        # sd = 0.1
-        with pyro.plate("ms_plate", 12):
-            ms = pyro.sample("ms", dist.Normal(0.0, 1.0))
-            sms = ms - ms.mean()
-        
-        with pyro.plate("data", len(month)):
-            intercept = sms.repeat(math.ceil(len(month)/len(sms)))[:len(month)]
-            return pyro.sample("obs", dist.LogNormal(slope * month + intercept, scale), obs=obs)
-        
-
-        
     auto_guide = pyro.infer.autoguide.AutoNormal(model)
     adam = pyro.optim.Adam({"lr": 0.01})  # Consider decreasing learning rate.
     elbo = pyro.infer.Trace_ELBO()
@@ -170,21 +173,9 @@ def test_slope():
 # ###################################
 def test_prediction():
 
-    def model(month, obs=None):
-        slope = pyro.sample("slope", dist.Normal(0.0, 1.0))
-        scale = pyro.sample("sd", dist.HalfNormal(1.0))
-        # sd = 0.1
-        with pyro.plate("ms_plate", 12):
-            ms = pyro.sample("ms", dist.Normal(0.0, 1.0))
-            sms = ms - ms.mean()
-        
-        with pyro.plate("data", len(month)):
-            intercept = sms.repeat(math.ceil(len(month)/len(sms)))[:len(month)]
-            return pyro.sample("obs", dist.LogNormal(slope * month + intercept, scale), obs=obs)
-        
-
         
     auto_guide = pyro.infer.autoguide.AutoNormal(model)
+    # auto_guide = pyro.infer.autoguide.AutoMultivariateNormal(model)
     adam = pyro.optim.Adam({"lr": 0.01})  # Consider decreasing learning rate.
     elbo = pyro.infer.Trace_ELBO()
     svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
@@ -235,5 +226,7 @@ def test_prediction():
 
     plt.show()
 
-test_slope()
+test_prediction()
+# test_slope()
+# test_simple_prediction()
 
