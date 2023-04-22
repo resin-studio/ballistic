@@ -36,27 +36,6 @@
     - more precisely, it is the strongest conjunction from the type abstraction 
     - that is the supertype of the abstract semantics of that expression   
 
-# algorithm 
-0. hyperparams: sampling number, fuel for iterations.
-1. input: data, initial type abstraction: Top, InputBase, TerminalBase 
-2. construct automaton from grammar, data, and type abstraction 
-3. if automaton is empty then return none.  
-4. get prog in automaton ranked by ast-cost 
-5. learn weights via pyro (i.e. stochastic variational inference) 
-6. compute "fitness" of program w.r.t data by sampling.
-    - maximize fitness: P(f)*Prod_i[P(out_i | f, in_i)]
-    - minimize inverse transform: -log P(g) + Sum_i[-log(P(out_i | f, in_i))]
-    - correctness model: probability increases exponentially as standard deviation increases?
-    - simplicity model: probability decreases exponentially as length increases
-    - reference: https://people.csail.mit.edu/asolar/SynthesisCourse/Lecture20.htm
-    - TODO: 
-        - lookup statistical/machine learning methods for measuring fit
-        - can we use standard deviation to measure this? 
-7. terminate if no better solution can be found.
-8. find rows in data with really bad fit / poor correctness. 
-    - e.g. examples at the standard deviation boundary.
-9. annotate program with types weakened by examples 
-10. update universe with conjunction of new weakened types from the annotated program and goto 2 
 
 ## glossary 
 - given an architecture y = mx + b 
@@ -126,15 +105,22 @@
 
 ## synthesis goal 
 - synthesize distributional function from type/data
-## synthesis approach 
-- have a default DSL consisting of some basic arithmetic and plate concepts
-- represent bayesian network as type type
-- compile type type into DSL refinement
-- compile DSL into tree automaton
-- repeat:
-    - search for tree that is accepted by tree automata (Syngar) 
-    - construct model from tree and dataset with priors 
-    - use stochastic variational inference to learn posteriors (Pyro)
+
+## synthesis approach
+- inspired by: Ellis et al. Unsupervised Learning by Program Synthesis
+    - reference: https://people.csail.mit.edu/asolar/SynthesisCourse/Lecture20.htm
+- define a grammar consisting of some basic arithmetic and plate concepts
+- define a denotation into SMT language
+- associated grammar with uniform distribution for each node
+- repeat over production rule, threshold:
+    - generate SMT formula representing space of programs from grammar/production rules and denotation semantics
+        - with constraint that description length must be less than threshold
+    - draw a program from grammar/description length distribution 
+    - learn posteriors for latent variables using SVI in Pyro
+    - let threshold' be discrepancy between mean output and observed output 
+    - if threshold' >= threshold: terminate
+    - else: update threshold to threshold' 
+
 
 ## Example
 - learn from time series unemployment data without specifying any structure
