@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import pyro
 import pyro.distributions as dist
 import pyro.distributions.constraints as constraints
+from pyro.infer import MCMC, NUTS
 
 from textx import metamodel_from_file
 from datetime import datetime, date 
@@ -124,70 +125,69 @@ def test_simple_prediction():
 
     plt.show()
 
-def model(month, obs=None):
-    slope = pyro.param("slope", torch.tensor(0.))
-    # TODO: why does tensor(1.) result in positive slope?
-    # slope = pyro.param("slope", torch.tensor(1.))
-    # TODO: why does normal choose a positive slope?
-    # TODO: consider if multivariate is being used properly
-    # slope = pyro.sample("slope", dist.Normal(0.0, 1.0))
-    intercept = pyro.param("intercept", torch.tensor(0.)) 
-    # scale = pyro.sample("sd", dist.HalfNormal(1.0))
-    scale = 0.1
-    # with pyro.plate("ms_plate", 12):
-    #     sms = pyro.sample("ms", dist.Normal(0.0, 1.0))
-    #     sms = sms - sms.mean()
-    
-    with pyro.plate("data", len(month)):
-        # intercept = sms.repeat(math.ceil(len(month)/len(sms)))[:len(month)]
-        return pyro.sample("obs", dist.LogNormal(slope * month + intercept, scale), obs=obs)
 
 
-def test_slope():
-
-    auto_guide = pyro.infer.autoguide.AutoNormal(model)
-    adam = pyro.optim.Adam({"lr": 0.01})  # Consider decreasing learning rate.
-    elbo = pyro.infer.Trace_ELBO()
-    svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
-
-
-    smoke_test = ('CI' in os.environ)
-    losses = []
-    for step in range(2000 if not smoke_test else 2):  # Consider running for more steps.
-        loss = svi.step(data[:, 0], data[:, 1])
-        losses.append(loss)
-
-    #########################
-    with pyro.plate("samples", 800, dim=-2):
-        samples = auto_guide(data[:,0])
-
-    slope_samples = samples["slope"]
-
-    fig = plt.figure(figsize=(10, 6))
-    sns.histplot(slope_samples.detach().cpu().numpy(), kde=True, stat="density", label="Slope")
-    fig.suptitle("Density of Slope");
-    plt.xlabel("Slope of regression line")
-    plt.legend()
-    plt.show()
         
 # ###################################
 def test_prediction():
 
+    def model(month, obs=None):
+        N = month.size(0)
+        # slope = pyro.param("slope", torch.tensor(0.))
+        # TODO: why does tensor(1.) result in positive slope?
+        # slope = pyro.param("slope", torch.tensor(1.))
+        # TODO: why does normal choose a positive slope?
+        # TODO: test out MCMC to follow example as close as possible 
+        # TODO: consider if multivariate is being used properly
+        slope = pyro.sample("slope", dist.Normal(0.0, 1.0))
+        # intercept = pyro.param("intercept", torch.tensor(0.)) 
+        scale = pyro.sample("sd", dist.HalfNormal(1.0))
+        # scale = 0.1
+        with pyro.plate("S", 12):
+            ms = pyro.sample("ms", dist.Normal(0.0, 1.0))
+            ms = ms - ms.mean()
         
-    auto_guide = pyro.infer.autoguide.AutoNormal(model)
-    # auto_guide = pyro.infer.autoguide.AutoMultivariateNormal(model)
-    adam = pyro.optim.Adam({"lr": 0.01})  # Consider decreasing learning rate.
-    elbo = pyro.infer.Trace_ELBO()
-    svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
+        with pyro.plate("data", N):
+            # TODO: why does Normal look correct with wrong slope?
+            # TODO: why does LogNormal explode graph?
+            return pyro.sample("obs", dist.Normal(slope * month + ms.repeat(math.ceil(N/12))[:N], scale), obs=obs)
+            # return pyro.sample("obs", dist.LogNormal(slope * month + ms.repeat(math.ceil(N/12))[:N], scale), obs=obs)
 
+    # ##### AutoNormal #####
+    # auto_guide = pyro.infer.autoguide.AutoNormal(model)
+    # svi = pyro.infer.SVI(model, auto_guide, pyro.optim.Adam({"lr": 0.01}), pyro.infer.Trace_ELBO())
+    # smoke_test = ('CI' in os.environ)
+    # pyro.clear_param_store()
+    # for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
+    #     loss = svi.step(data[:, 0], data[:, 1])
 
+    # predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=800)
+
+    ##### AutoMultivariateNormal #####
+    from pyro.infer.autoguide import AutoMultivariateNormal, init_to_mean
+    auto_guide = AutoMultivariateNormal(model, init_loc_fn=init_to_mean)
+    svi = pyro.infer.SVI(model, auto_guide, pyro.optim.Adam({"lr": 0.01}), loss = pyro.infer.Trace_ELBO())
     smoke_test = ('CI' in os.environ)
-    losses = []
-    for step in range(2000 if not smoke_test else 2):  # Consider running for more steps.
+    pyro.clear_param_store()
+    for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
         loss = svi.step(data[:, 0], data[:, 1])
-        losses.append(loss)
 
-    predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=500)
+    ##### Posterior samples
+    with pyro.plate("samples", 800, dim=-2):
+        posterior_samples = auto_guide(data[:,0])
+
+    # ##### Slope ####################
+    # samples = auto_guide(data[:,0])
+    # fig = plt.figure(figsize=(10, 6))
+    # sns.histplot(posterior_samples["slope"].detach().cpu().numpy(), kde=True, stat="density", label="Slope")
+    # fig.suptitle("Density of Slope");
+    # plt.xlabel("Slope of regression line")
+    # plt.legend()
+    # plt.show()
+    # ##########################
+
+    assert "obs" not in posterior_samples 
+    predictive = pyro.infer.Predictive(model, posterior_samples=posterior_samples)
 
     def multi(month):
         nonlocal predictive 
@@ -195,21 +195,18 @@ def test_prediction():
         svi_obs = svi_samples["obs"]
         return svi_obs
 
-    def single(month):
-        nonlocal predictive 
-        svi_samples = predictive(torch.tensor([month]))
-        svi_obs = svi_samples["obs"]
-        return svi_obs[:, 0]
+    # def single(month):
+    #     nonlocal predictive 
+    #     svi_samples = predictive(torch.tensor([month]))
+    #     svi_obs = svi_samples["obs"]
+    #     return svi_obs[:, 0]
 
+
+    prediction = multi(data[:,0])
+    # print(prediction)
 
     #########################
 
-
-    # print(data[:,1])
-
-    prediction = multi(data[:,0])
-
-    # prediction = result.multi(time_data)
     prediction_mean = prediction.mean(0).detach().cpu().numpy() 
     print(prediction_mean)
     # prediction_lower = prediction.kthvalue(int(len(prediction) * 0.05), dim=0)[0].detach().cpu.numpy()
@@ -227,6 +224,5 @@ def test_prediction():
     plt.show()
 
 test_prediction()
-# test_slope()
 # test_simple_prediction()
 
