@@ -171,8 +171,6 @@ def test_prediction():
     pyro.clear_param_store()
     for step in range(1000 if not smoke_test else 2):  # Consider running for more steps.
         loss = svi.step(data[:, 0], data[:, 1])
-
-    ##### Posterior samples
     with pyro.plate("samples", 800, dim=-2):
         posterior_samples = auto_guide(data[:,0])
 
