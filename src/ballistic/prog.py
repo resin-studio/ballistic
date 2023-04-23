@@ -46,19 +46,35 @@ for step in range(1000 if not smoke_test else 2):  # Consider running for more s
     losses.append(loss)
         '''
 
+#     return f'''
+# def model({", ".join([param.name for param in ast.params])}, obs=None):
+#     {generate_model_from_body(input_name, ast.body)}
+
+# auto_guide = pyro.infer.autoguide.AutoNormal(model)
+# adam = pyro.optim.Adam({{"lr": 0.02}})  # Consider decreasing learning rate.
+# elbo = pyro.infer.Trace_ELBO()
+# svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
+
+# {training}
+
+# predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=600)
+
     
     return f'''
 def model({", ".join([param.name for param in ast.params])}, obs=None):
     {generate_model_from_body(input_name, ast.body)}
 
-auto_guide = pyro.infer.autoguide.AutoNormal(model)
-adam = pyro.optim.Adam({{"lr": 0.02}})  # Consider decreasing learning rate.
-elbo = pyro.infer.Trace_ELBO()
-svi = pyro.infer.SVI(model, auto_guide, adam, elbo)
-
+from pyro.infer.autoguide import AutoMultivariateNormal, init_to_mean
+auto_guide = AutoMultivariateNormal(model, init_loc_fn=init_to_mean)
+svi = pyro.infer.SVI(model, auto_guide, pyro.optim.Adam({{"lr": 0.01}}), loss = pyro.infer.Trace_ELBO())
+smoke_test = ('CI' in os.environ)
+pyro.clear_param_store()
 {training}
+with pyro.plate("samples", 800, dim=-2):
+    posterior_samples = auto_guide(data[:,0])
 
-predictive = pyro.infer.Predictive(model, guide=auto_guide, num_samples=600)
+assert "obs" not in posterior_samples 
+predictive = pyro.infer.Predictive(model, posterior_samples=posterior_samples)
 
 def multi({", ".join(param.name for param in ast.params)}):
     global predictive 

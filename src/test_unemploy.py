@@ -57,10 +57,35 @@ df = (df.reset_index().reset_index()[["level_0", "Claims"]])
 data = torch.tensor(df.values, dtype=torch.float)
 ###########################
 #### Generated Program ####
-# result = prog.generate_function(util.resource('examples/unemploy.bll'), data)
 ###########################
 
+
 import math
+
+def test_generate():
+    result = prog.generate_function(util.resource('examples/unemploy.bll'), data)
+    multi = result.multi
+
+    prediction = multi(data[:,0])
+    # print(prediction)
+
+    #########################
+
+    prediction_mean = prediction.mean(0).detach().cpu().numpy() 
+    print(prediction_mean)
+    # prediction_lower = prediction.kthvalue(int(len(prediction) * 0.05), dim=0)[0].detach().cpu.numpy()
+    # prediction_upper = prediction.kthvalue(int(len(prediction) * 0.95), dim=0)[0].detach().cpu.numpy()
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), sharey=True)
+    fig.suptitle("Unemployment claims over time", fontsize=16)
+
+    ax.plot(data[:,0], prediction_mean)
+    # ax.fill_between(time_data, prediction_lower, prediction_upper, alpha=0.5)
+    ax.plot(data[:,0], data[:,1], "x")
+    ax.set(xlabel="Time", ylabel="Unemployment claims", title="Washington State")
+    ###################################
+
+    plt.show()
 
 def test_simple_prediction():
 
@@ -174,6 +199,9 @@ def test_prediction():
     with pyro.plate("samples", 800, dim=-2):
         posterior_samples = auto_guide(data[:,0])
 
+    assert "obs" not in posterior_samples 
+    predictive = pyro.infer.Predictive(model, posterior_samples=posterior_samples)
+
     # ##### Slope ####################
     # samples = auto_guide(data[:,0])
     # fig = plt.figure(figsize=(10, 6))
@@ -183,9 +211,6 @@ def test_prediction():
     # plt.legend()
     # plt.show()
     # ##########################
-
-    assert "obs" not in posterior_samples 
-    predictive = pyro.infer.Predictive(model, posterior_samples=posterior_samples)
 
     def multi(month):
         nonlocal predictive 
@@ -221,6 +246,7 @@ def test_prediction():
 
     plt.show()
 
-test_prediction()
+# test_prediction()
 # test_simple_prediction()
+test_generate()
 
