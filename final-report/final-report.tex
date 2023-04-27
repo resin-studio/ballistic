@@ -171,6 +171,24 @@ projected from $t$ modulo 52.
 
 
 \section{Compiling programs into Pyro}
+In order to learn the posterior distributions of our programs, we compile down into  
+a Pyro model and run Pyro's SVI algorithm. For the most part, the compilation technique
+is fairly standard, but there is one particular issue that deserves special attention. 
+Pyro's model operates over tensors of data, while the program DSL operates over points. 
+This difference beomes noticeable when compiling the indexing operation. Pyro is
+operating over tensors that are computed via data-parallelism. There is no
+equivalent data-parallel operation for indexing a matrix with vector indices.
+Thus, indexing is actually compiled into  
+
+
+
+there is no corresponding
+
+
+
+
+
+
  The /  models and gradient descent
 
 \section{Encoding language into Z3}
