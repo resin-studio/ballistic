@@ -13,6 +13,10 @@ style=alphabetic,
 \usepackage{stmaryrd}
 \usepackage{listings}
 
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+
 \makeatletter % allow us to mention @-commands
 \def\arcr{\@arraycr}
 \makeatother
@@ -43,16 +47,15 @@ style=alphabetic,
 The aim of this project is to automatically synthesize  programs from data sets. 
 The intended scenario consists of a user who wants to fit a line to some data.
 It is quite easy to encode an equation
-from inputs to outputs in a typical programming language, such as 
+from inputs to outputs in a typical programming language, such as the following:
 \[ f(x) = m x + b \] 
-.
 
 However, current programming languages do not provide a compact notation 
 for representing the requirement that the weights $m$ and $b$ are learned from data.
 \textit{Pyro} \cite{} is a language embedded in \textit{Python} \cite{} for 
 expressing the requirements of learning weights from data 
 with probabilities for measuring uncertainty in the learned result. 
-In Pyro, the simplest way to represent the above linear equation is 
+In Pyro, the simplest way to represent the above linear equation is as follows: 
 
 \begin{lstlisting}[language=Python]
 def model(xs, ys=None):
@@ -63,13 +66,12 @@ def model(xs, ys=None):
         return pyro.sample("ys", 
             dist.Normal(m * xs + b, 1.), obs=ys)
 \end{lstlisting}
-.
 
 Clearly, there is a vast increase in notational noise, within which the essence of the idea is buried. 
 
 To reduce the notational noise, this project introduces a simple programming language 
 that allows expressing learnable models in a succinct notation. In this new language,
-we can express a model for learning a linear equation as 
+we can express a model for learning a linear equation as follows: 
 
 \begin{lstlisting}[language=Python]
 x => {y | x, y : data}
@@ -77,7 +79,6 @@ x => {y | x, y : data}
     b $\sim$ normal(0., 1.); 
     normal(m * x + b, 1)
 \end{lstlisting}
-.
 
 The notation of our new language is is far more compact than Pyro's. 
 It is only slightly more complicated than the bare linear equation, which is
@@ -93,7 +94,6 @@ user can simply state the data and its relation to inputs and outputs.
 \begin{lstlisting}[language=Python]
 x => {y | x, y : data}
 \end{lstlisting}
-.
 
 The first part of the solution compiles a program in the DSL into a Pyro model and applies Pyro's 
 \textit{stochastic variational inference} (SVI) algorithm \cite{} to learn posterior distributions for the weights. 
@@ -110,7 +110,7 @@ After finding the program, the first part may be used to learn posteriors.
 
 \section{Syntax}
 
-The programs in the domain specific language are constructed using the syntax:
+The programs in the domain specific language are constructed using the following syntax:
 \[
   \begin{array}{l @{} l}
     f &{} ::= p \Rightarrow s\ b \\
@@ -131,6 +131,45 @@ The programs in the domain specific language are constructed using the syntax:
   \end{array}
 \]
 .
+
+To see what these combinations of syntax mean, consider a program
+for predicting the the number of unemployment insurance claims 
+between the 2008 recession and the 2020 pandemic \cite{}.
+Let's examine the plot of the data to gauge its shape.
+\newline
+\includegraphics[scale=0.35]{weekly_claims}
+
+There appears to be an overall trend that's fairly linear with respect to the year. 
+However, there are also periodic trends that seem to depend on the time of year.  
+We can capture these trends with the following program:
+
+\begin{lstlisting}[language=Python]
+t => {n | t, n : data}
+    m $\sim$ normal(0., 1.); 
+    osd $\sim$ halfnorm(1.); 
+    bs $\#$ 52 $\sim$ normal(0., 1.); 
+    bs $\sim$ @(bs - mean(bs));
+    lognorm(m * t + bs[t], osd)
+\end{lstlisting}
+
+The program represents a function from a weekly time index to a number of claims.
+The parameter $t$ represents a single input. The variable $n$ represents
+the ouput, such that the first column of the data are used as inputs, 
+and second column of the data are observed outputs.
+The rest of the program is the body of the function.
+First it samples a slope $m$ from a normal distribution centered at 0 with 
+a standard deviation of 1. To handle the periodic trends, it constructs
+a vector $bs$ of 52 independent elements, where each is sampled from 
+a normal distribution. In order to ensure the weight $m$ governs
+the overall trend, we need the values of $bs$ to cancel each other out.
+To this end, the program recomputes the values of the vector point-wise 
+by subtracting the mean from the original value. The notation $@$ simply indicates
+to use the value of the expression directly.
+The resulting number of claims is drawn from a log normal distribution
+governed by $m * t + bs[t]$. The term $bs[t]$ takes an element from $bs$ 
+projected from $t$ modulo 52. 
+
+
 
 \section{Compiling programs into Pyro}
  The /  models and gradient descent

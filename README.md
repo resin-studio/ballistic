@@ -3,7 +3,8 @@
 Bayesian regression synthesis
 
 ## TODO
-- comment out everything except direct, see if it can synthesize addition.
+- see if expressions over plates are propagated properly.
+    - might need to convert output col to output matrix.
 
 ## notice
 - the relation between inputs and outputs is connected via smt constraints and terms
