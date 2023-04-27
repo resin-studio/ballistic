@@ -42,7 +42,7 @@ style=alphabetic,
 \section{Introduction}
 The aim of this project is to automatically synthesize  programs from data sets. 
 The intended scenario consists of a user who wants to fit a line to some data.
-It is quite easy to encode a an equation
+It is quite easy to encode an equation
 from inputs to outputs in a typical programming language, such as 
 \[ f(x) = m x + b \] 
 .
@@ -55,13 +55,13 @@ with probabilities for measuring uncertainty in the learned result.
 In Pyro, the simplest way to represent the above linear equation is 
 
 \begin{lstlisting}[language=Python]
-def model(x, y=None):
+def model(xs, ys=None):
     m = pyro.param("m", torch.tensor(0.))
     b = pyro.param("b", torch.tensor(0.))
     
-    with pyro.plate("data", len(is_cont_africa)):
-        return pyro.sample("y", 
-            dist.Normal(m * x + b, 1.), obs=y)
+    with pyro.plate("data", len(xs)):
+        return pyro.sample("ys", 
+            dist.Normal(m * xs + b, 1.), obs=ys)
 \end{lstlisting}
 .
 
@@ -85,9 +85,9 @@ due to annotating information about prior beliefs on the weights, the data, and
 distribution of the data in relation to the equation. 
 
 Unfortunately, this solution leaves open another problem. How do we conjure up some 
-initial belief about the distributions and shape of the equation? 
+initial belief about the distributions and the shape of the equation? 
 
-To avoid needing to specify these, we simply the specification further, such that the 
+To avoid needing to specify these details, we simplify the specification further, such that the 
 user can simply state the data and its relation to inputs and outputs. 
 
 \begin{lstlisting}[language=Python]
@@ -96,16 +96,47 @@ x => {y | x, y : data}
 .
 
 The first part of the solution compiles a program in the DSL into a Pyro model and applies Pyro's 
-\textit{stochastic gradient descent} algorithm \cite{} to learn posterior distributions for the weights. 
+\textit{stochastic variational inference} (SVI) algorithm \cite{} to learn posterior distributions for the weights. 
 
 The second part of the solution encodes the DSL grammar and semantics into
-an logical formula in Z3 \cite{} and uses Z3's \textit{SMT} \cite{} algorithm to search
+an logical formula in Z3 \cite{} and uses Z3's \textit{satisfiability modulo theories} (SMT) \cite{} algorithm to search
 for a program with priors.  
 The particular technique for constructing the search space from the grammar and semantics 
 is based on that of Ellis et al \cite{}.
 Unfortunately, at the time of this writing, Z3 does not terminate in a reasonable amount of time, 
 despite using an encoding very similar to that of Ellis et al. 
 After finding the program, the first part may be used to learn posteriors. 
+
+
+\section{Syntax}
+
+The programs in the domain specific language are constructed using the syntax:
+\[
+  \begin{array}{l @{} l}
+    f &{} ::= p \Rightarrow s\ b \\
+    s &{} ::= \{ x \ |\ p : \text{data} \} \\
+    p &{} ::= x  \ |\ x,\ p \\
+    b &{} ::= x\ \sim\ d\ ;\ b \ |\ x\ \#\ n\ \sim\ d\ ;\ b \ |\ d \\ 
+    d &{} ::= 
+        \text{normal}(e, e) \ |\ 
+        \text{lognorm}(e, e) \ |\ 
+        \text{uniform}(e, e) \ |\ 
+        \text{halfnorm}(e) \ |\ 
+        @(e) \\ 
+    e &{} ::= q\ \vec{r} \\
+    r &{} ::= +\ q \ |\ -\ q \\
+    q &{} ::= a\ \vec{z} \\
+    z &{} ::= *\ q \ |\ /\ q \\
+    a &{} ::= (e) \ |\ x[e] \ |\ \text{mean}(x) \\
+  \end{array}
+\]
+.
+
+\section{Compiling programs into Pyro}
+ The /  models and gradient descent
+
+\section{Encoding language into Z3}
+ The / formulas and symbolic reasoning  
 
 
 \end{document}

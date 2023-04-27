@@ -33,4 +33,4 @@ Atom: Paren | Mean | Project | ID | FLOAT ;
 
 Paren:  '(' content=Expr ')' ;
 Mean: 'mean' '(' vector=ID ')' ;
-Project: 'project' '(' vector=ID ',' index = Expr ')' ;
+Project: vector=ID '[' index = Expr ']' ;

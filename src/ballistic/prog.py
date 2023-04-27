@@ -968,7 +968,7 @@ class Extractor:
         elif isinstance(tree, MeanTree):
             return f'mean({tree.vector})'
         elif isinstance(tree, ProjectTree):
-            return f'project({tree.vector}, {self.from_expr(tree.index)})'
+            return f'{tree.vector}[{self.from_expr(tree.index)}]'
         elif isinstance(tree, IdTree):
             return tree.content
         elif isinstance(tree, FloatTree):
