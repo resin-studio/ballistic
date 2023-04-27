@@ -126,7 +126,7 @@ The programs in the domain specific language are constructed using the following
     r &{} ::= +\ q \ |\ -\ q \\
     q &{} ::= a\ \vec{z} \\
     z &{} ::= *\ q \ |\ /\ q \\
-    a &{} ::= (e) \ |\ x[e] \ |\ \text{mean}(x) \\
+    a &{} ::= (e) \ |\ \text{mean}(x) \ |\ \text{align}(x)\\
   \end{array}
 \]
 .
@@ -148,7 +148,7 @@ t => {n | t, n : data}
     osd $\sim$ halfnorm(1.); 
     bs $\#$ 52 $\sim$ normal(0., 1.); 
     bs $\sim$ @(bs - mean(bs));
-    lognorm(m * t + bs[t], osd)
+    lognorm(m * t + align(bs), osd)
 \end{lstlisting}
 
 The program represents a function from a weekly time index to a number of claims.
@@ -158,38 +158,43 @@ and second column of the data are observed outputs.
 The rest of the program is the body of the function.
 First it samples a slope $m$ from a normal distribution centered at 0 with 
 a standard deviation of 1. To handle the periodic trends, it constructs
-a vector $bs$ of 52 independent elements, where each is sampled from 
+a plate $bs$ of 52 independent elements, where each is sampled from 
 a normal distribution. In order to ensure the weight $m$ governs
 the overall trend, we need the values of $bs$ to cancel each other out.
 To this end, the program recomputes the values of the vector point-wise 
 by subtracting the mean from the original value. The notation $@$ simply indicates
 to use the value of the expression directly.
 The resulting number of claims is drawn from a log normal distribution
-governed by $m * t + bs[t]$. The term $bs[t]$ takes an element from $bs$ 
-projected from $t$ modulo 52. 
+governed by $m * t + \text{align}(bs)$. The term $\text{align}(bs)$ takes an element from $bs$ 
+at an implicit iteration index modulo 52. 
 
 
 
 \section{Compiling programs into Pyro}
 In order to learn the posterior distributions of our programs, we compile down into  
 a Pyro model and run Pyro's SVI algorithm. For the most part, the compilation technique
-is fairly standard, but there is one particular issue that deserves special attention. 
+is fairly standard, but the $\text{align}(\cdot)$ operator deserves special attention. 
 Pyro's model operates over tensors of data, while the program DSL operates over points. 
 This difference beomes noticeable when compiling the indexing operation. Pyro is
 operating over tensors that are computed via data-parallelism. There is no
-equivalent data-parallel operation for indexing a matrix with vector indices.
-Thus, indexing is actually compiled into  
+equivalent data-parallel operation for indexing a matrix with a vector of indices.
+Thus, indexing is actually compiled into repeating the target plate and aligns lengthens it
+to match the size of the implicit number of total iterations.    
+The example of unemployment insurance claims above is compiled into the following model.
 
+\begin{lstlisting}[language=Python]
+def model(t, n=None):
+    m = pyro.sample("m", dist.Normal(0.0, 1.0))
+    osd = pyro.sample("osd", dist.HalfNormal(1.0))
+    with pyro.plate("bs_plate", 52):
+        bs = pyro.sample("bs", dist.Normal(0.0, 1.0))
+    bs = bs - bs.mean()
+    with pyro.plate("data", len(t)):
+        return pyro.sample("n", dist.Normal(
+            m * t + bs.repeat(math.ceil(len(t)/len(bs)))
+                [:len(t)], osd), obs=n)
+\end{lstlisting}
 
-
-there is no corresponding
-
-
-
-
-
-
- The /  models and gradient descent
 
 \section{Encoding language into Z3}
  The / formulas and symbolic reasoning  
