@@ -1048,40 +1048,39 @@ def generate_function(file, data=None):
     ast = parse_from_file(file)
     if ast.body:
         return learn_posteriors(ast, data)
-#     elif ast.spec and data != None:
-#         header_source_code = util.read(file)
+    elif ast.spec and data != None:
+        header_source_code = util.read(file)
 
-#         fields = ast.spec.args
-#         result_name = ast.spec.result
-#         params : list = ast.params
+        fields = ast.spec.args
+        result_name = ast.spec.result
+        params : list = ast.params
 
-#         data_size = len(data)
-#         max_samples = min(10, data_size)
-#         span = math.floor(data_size/max_samples)
-#         indicies = torch.tensor([span * i for i in range(max_samples)])
-#         reduced_data = torch.index_select(data, 0, indicies)
-#         print('%%%%%%%%%%%%%%%')
-#         print(reduced_data)
-#         print('%%%%%% reduced data above %%%%%%%')
+        data_size = len(data)
+        max_samples = min(10, data_size)
+        span = math.floor(data_size/max_samples)
+        indicies = torch.tensor([span * i for i in range(max_samples)])
+        reduced_data = torch.index_select(data, 0, indicies)
+        print('%%%%%%%%%%%%%%%')
+        print(reduced_data)
+        print('%%%%%% reduced data above %%%%%%%')
 
-#         small_input_data = extract_fields(params, fields, reduced_data)
-#         small_output_data = extract_field(result_name, fields, reduced_data)
+        small_input_data = extract_fields(params, fields, reduced_data)
+        small_output_data = extract_field(result_name, fields, reduced_data)
 
-#         print('------- building search space')
-#         spacer = Spacer(params, small_input_data)
-#         search_space = spacer.to_body({}, {})
+        print('------- building search space')
+        spacer = Spacer(params, small_input_data)
+        search_space = spacer.to_body({}, {})
 
-#         body_source_code, synth_loss = synthesize_body(search_space, small_output_data)
-#         synth_mean_loss = synth_loss / len(small_output_data)
+        body_source_code, synth_loss = synthesize_body(search_space, small_output_data)
+        synth_mean_loss = synth_loss / len(small_output_data)
 
-#         source_code = header_source_code + '\n' + body_source_code
-#         print(f'''
-# ##### SYNTHESIZED CODE #####
-# {source_code}
-# #############################
-#         ''')
+        source_code = header_source_code + '\n' + body_source_code
+        print(f'''
+##### SYNTHESIZED CODE #####
+{source_code}
+#############################
+        ''')
 
-    if False:
         # if body_source_code:
 
             # input_data = extract_fields(params, fields, data)
