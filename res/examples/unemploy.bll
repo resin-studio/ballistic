@@ -3,4 +3,4 @@ month => {claim | month, claim : data}
     sd ~ halfnorm(1.) ; 
     ms # 12 ~ normal(0., 1.) ; 
     ms ~ @(ms - mean(ms)) ;
-    normal(slope * month + ms[month], sd)
+    normal(slope * month + align(ms), sd)
