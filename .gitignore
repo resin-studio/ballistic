@@ -1,4 +1,8 @@
 **.sw?
+**.bbl	
+**.bcf	
+**.blg	
+**.run.xml	
 **.aux
 **.log
 **.nav
