@@ -1,0 +1,109 @@
+\documentclass[runningheads]{llncs}
+
+% \documentclass{article}
+
+\usepackage[
+backend=biber,
+style=alphabetic,
+]{biblatex}
+
+\usepackage{mathpartir}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage{listings}
+
+\makeatletter % allow us to mention @-commands
+\def\arcr{\@arraycr}
+\makeatother
+
+\lstset{
+    % identifierstyle=\color{violet},
+    % textcolor=blue,
+    % keywordstyle=\color{blue},
+    keywordstyle=\text,
+    basicstyle=\ttfamily,
+    mathescape=true,
+    showspaces=false,
+    morekeywords={let, fix, in}
+}
+\usepackage[utf8]{inputenc}
+% \usepackage[T1]{fontenc}
+
+
+\title{Synthesis of stochastic programs from data}
+\author{Thomas Logan}
+\institute{University of Texas at Austin}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+The aim of this project is to automatically synthesize  programs from data sets. 
+The intended scenario consists of a user who wants to fit a line to some data.
+It is quite easy to encode a an equation
+from inputs to outputs in a typical programming language, such as 
+\[ f(x) = m x + b \] 
+.
+
+However, current programming languages do not provide a compact notation 
+for representing the requirement that the weights $m$ and $b$ are learned from data.
+\textit{Pyro} \cite{} is a language embedded in \textit{Python} \cite{} for 
+expressing the requirements of learning weights from data 
+with probabilities for measuring uncertainty in the learned result. 
+In Pyro, the simplest way to represent the above linear equation is 
+
+\begin{lstlisting}[language=Python]
+def model(x, y=None):
+    m = pyro.param("m", torch.tensor(0.))
+    b = pyro.param("b", torch.tensor(0.))
+    
+    with pyro.plate("data", len(is_cont_africa)):
+        return pyro.sample("y", 
+            dist.Normal(m * x + b, 1.), obs=y)
+\end{lstlisting}
+.
+
+Clearly, there is a vast increase in notational noise, within which the essence of the idea is buried. 
+
+To reduce the notational noise, this project introduces a simple programming language 
+that allows expressing learnable models in a succinct notation. In this new language,
+we can express a model for learning a linear equation as 
+
+\begin{lstlisting}[language=Python]
+x => {y | x, y : data}
+    m $\sim$ normal(0., 1.); 
+    b $\sim$ normal(0., 1.); 
+    normal(m * x + b, 1)
+\end{lstlisting}
+.
+
+The notation of our new language is is far more compact than Pyro's. 
+It is only slightly more complicated than the bare linear equation, which is
+due to annotating information about prior beliefs on the weights, the data, and 
+distribution of the data in relation to the equation. 
+
+Unfortunately, this solution leaves open another problem. How do we conjure up some 
+initial belief about the distributions and shape of the equation? 
+
+To avoid needing to specify these, we simply specification further, such that the 
+user can simply state the data and its relation to inputs and outputs. 
+
+\begin{lstlisting}[language=Python]
+x => {y | x, y : data}
+\end{lstlisting}
+.
+
+The first part of the solution compiles a program in the DSL into a Pyro model and applies Pyro's 
+\textit{stochastic gradient descent} algorithm \cite{} to learn posterior distributions for the weights. 
+
+The second part of the solution encodes the DSL grammar and semantics into
+an logical formula in Z3 \cite{} and uses Z3's \textit{SMT} \cite{} algorithm to search
+for a program with priors. 
+The particular technique for constructing the search space from the grammar and semantics 
+based on that of Ellis et al \cite{}.
+After finding the program, the first part may be used to learn posteriors. 
+
+
+\end{document}
