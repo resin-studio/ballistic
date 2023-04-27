@@ -127,76 +127,75 @@ def single({", ".join(param for param in ast.params)}):
     def from_body(self, input_name, body):
         if body.__class__.__name__ == "Sample":
             return f'''
-    {body.name} = {self.from_dist(body.name, body.src)}
+    {body.name} = {self.from_dist(body.name, body.src, input_name)}
     {self.from_body(input_name, body.contin)}
             '''
 
         elif body.__class__.__name__ == "Plate":
             return f'''
     with pyro.plate("{body.name}_plate", {body.size}):
-        {body.name} = {self.from_dist(body.name, body.src)}
+        {body.name} = {self.from_dist(body.name, body.src, input_name)}
     {self.from_body(input_name, body.contin)}
             '''
         elif body.__class__.__name__ == "Final":
             return f'''
     with pyro.plate("data", len({input_name})):
-        return {self.from_dist("obs", body.content)}
+        return {self.from_dist("obs", body.content, input_name)}
             '''
 
-    def from_dist(self, name, dist):
+    def from_dist(self, name, dist, input_name):
         obs_str = ', obs=obs' if name == "obs" else '' 
         if dist.__class__.__name__ == "Normal":
-            return f'pyro.sample("{name}", dist.Normal({self.from_expr(dist.mean)}, {self.from_expr(dist.sigma)}){obs_str})'
+            return f'pyro.sample("{name}", dist.Normal({self.from_expr(dist.mean, input_name)}, {self.from_expr(dist.sigma, input_name)}){obs_str})'
         elif dist.__class__.__name__ == "Lognorm":
-            return f'pyro.sample("{name}", dist.LogNormal({self.from_expr(dist.mean)}, {self.from_expr(dist.sigma)}){obs_str})'
+            return f'pyro.sample("{name}", dist.LogNormal({self.from_expr(dist.mean, input_name)}, {self.from_expr(dist.sigma, input_name)}){obs_str})'
         elif dist.__class__.__name__ == "Uniform":
-            return f'pyro.sample("{name}", dist.Uniform({self.from_expr(dist.low)}, {self.from_expr(dist.high)}){obs_str})'
+            return f'pyro.sample("{name}", dist.Uniform({self.from_expr(dist.low, input_name)}, {self.from_expr(dist.high, input_name)}){obs_str})'
         elif dist.__class__.__name__ == "Halfnorm":
-            return f'pyro.sample("{name}", dist.HalfNormal({self.from_expr(dist.scale)}){obs_str})'
+            return f'pyro.sample("{name}", dist.HalfNormal({self.from_expr(dist.scale, input_name)}){obs_str})'
         else:
             assert dist.__class__.__name__ == "Direct"
-            v = f'{self.from_expr(dist.content)}'
+            v = f'{self.from_expr(dist.content, input_name)}'
             if name == "obs":
                 return f'pyro.sample("{name}", dist.Normal(torch.nan_to_num(1. * ({v}), 0), 0.01){obs_str})'
             else:
                 return v 
 
-    def from_expr(self, expr):
-        base_str = self.from_prod(expr.base)
+    def from_expr(self, expr, input_name):
+        base_str = self.from_prod(expr.base, input_name)
         exts_str = ''
         for ext in expr.exts:
             if ext.__class__.__name__ == "Plus":
-                exts_str += (' + ' + self.from_prod(ext.arg))
+                exts_str += (' + ' + self.from_prod(ext.arg, input_name))
             elif ext.__class__.__name__ == "Minus":
-                exts_str += (' - ' + self.from_prod(ext.arg))
+                exts_str += (' - ' + self.from_prod(ext.arg, input_name))
             else:
                 assert False
             
             
         return base_str + exts_str 
 
-    def from_prod(self, prod):
-        base_str = self.from_atom(prod.base)
+    def from_prod(self, prod, input_name):
+        base_str = self.from_atom(prod.base, input_name)
         factors_str = ''
         for factor in prod.factors:
             if factor.__class__.__name__ == "Mul":
-                factors_str += (' * ' + self.from_atom(factor.arg))
+                factors_str += (' * ' + self.from_atom(factor.arg, input_name))
             elif factor.__class__.__name__ == "Div":
-                factors_str += (' / ' + self.from_atom(factor.arg))
+                factors_str += (' / ' + self.from_atom(factor.arg, input_name))
             else:
                 assert False
             
         return base_str + factors_str 
 
-    def from_atom(self, atom):
+    def from_atom(self, atom, input_name):
         if atom.__class__.__name__ == "Paren":
-            return '(' + self.from_expr(atom.content) + ')'
+            return '(' + self.from_expr(atom.content, input_name) + ')'
         elif atom.__class__.__name__ == "Mean":
             return atom.vector + '.mean()'
-        elif atom.__class__.__name__ == "Project":
+        elif atom.__class__.__name__ == "Align":
             v = atom.vector
-            i = self.from_expr(atom.index)
-            return f'{v}.repeat(math.ceil(len({i})/len({v})))[:len({i})]'
+            return f'{v}.repeat(math.ceil(len({input_name})/len({v})))[:len({input_name})]'
         else:
             return f'{atom}'
 ### End Compiler ###
@@ -309,9 +308,8 @@ class MeanTree:
     vector : str 
 
 @dataclass(frozen=True, eq=True)
-class ProjectTree:
+class AlignTree:
     vector : str 
-    index : ExprTree
 
 @dataclass(frozen=True, eq=True)
 class IdTree:
@@ -321,7 +319,7 @@ class IdTree:
 class FloatTree:
     content : ArithRef 
 
-AtomOption = ParenTree | MeanTree | ProjectTree | IdTree | FloatTree
+AtomOption = ParenTree | MeanTree | AlignTree | IdTree | FloatTree
 
 ### End Internal Tree Structure
 
@@ -793,49 +791,48 @@ class Spacer:
                 ))
             scope_paren()
 
-            # Project 
-            def scope_project():
-                for plate_base, plate_weight_matrix in plates_in_scope.items():
-
-                    index = self.to_expr(plates_in_scope, vars_in_scope)
-
-                    project_outcol = [] 
-                    for idx, row in zip(index.outcol, plate_weight_matrix):
-                        result = ArithRef(0) 
-                        for i, w in enumerate(row):
-                            result = If(i == idx, w, result)
-                        project_outcol.append(result)
-
-                    spaces.append(SubSpace(
-                        tree = ProjectTree(
-                            vector = plate_base,
-                            index = index.tree
-                        ),     
-                        dlen = RealVal(1) + index.dlen,
-                        outcol = project_outcol,
-                        constraint=index.constraint
-                    ))
-            scope_project()
 
 
-        def scope_plate():
+        # TODO: plate is not a matrix, it is two cols: a mean col and an align col.
+        # def scope_mean():
 
-            for plate_base, weight_matrix in plates_in_scope.items():
+        #     for plate_base, weight_matrix in plates_in_scope.items():
 
-                mean_weights = []
-                for plate_weights in weight_matrix: 
-                    mean_weight = Sum(plate_weights) / RealVal(len(plate_weights))
-                    mean_weights.append(mean_weight)
+        #         mean_weights = []
+        #         for plate_weights in weight_matrix: 
+        #             mean_weight = Sum(plate_weights) / RealVal(len(plate_weights))
+        #             mean_weights.append(mean_weight)
 
-                spaces.append(SubSpace(
-                    tree = MeanTree(
-                        vector = plate_base
-                    ),     
-                    dlen = RealVal(1),
-                    outcol = mean_weights,
-                    constraint=And()
-                ))
-        scope_plate()
+        #         spaces.append(SubSpace(
+        #             tree = MeanTree(
+        #                 vector = plate_base
+        #             ),     
+        #             dlen = RealVal(1),
+        #             outcol = mean_weights,
+        #             constraint=And()
+        #         ))
+        # scope_mean()
+
+        # TODO
+        # def scope_align():
+        #     for plate_base, plate_weight_matrix in plates_in_scope.items():
+
+        #         align_outcol = [] 
+        #         for idx, row in zip(index.outcol, plate_weight_matrix):
+        #             result = ArithRef(0) 
+        #             for i, w in enumerate(row):
+        #                 result = If(i == idx, w, result)
+        #             align_outcol.append(result)
+
+        #         spaces.append(SubSpace(
+        #             tree = AlignTree(
+        #                 vector = plate_base,
+        #             ),     
+        #             dlen = RealVal(1) + index.dlen,
+        #             outcol = align_outcol,
+        #             constraint=And()
+        #         ))
+        # scope_align()
             
 
         def scope_params():
@@ -967,8 +964,8 @@ class Extractor:
             return '(' + self.from_expr(tree.content)  + ')'
         elif isinstance(tree, MeanTree):
             return f'mean({tree.vector})'
-        elif isinstance(tree, ProjectTree):
-            return f'{tree.vector}[{self.from_expr(tree.index)}]'
+        elif isinstance(tree, AlignTree):
+            return f'align({tree.vector})'
         elif isinstance(tree, IdTree):
             return tree.content
         elif isinstance(tree, FloatTree):

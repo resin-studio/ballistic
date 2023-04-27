@@ -29,8 +29,8 @@ Factor: Mul | Div;
 Mul: '*' arg=Atom ;
 Div: '/' arg=Atom ;
 
-Atom: Paren | Mean | Project | ID | FLOAT ;
+Atom: Paren | Mean | Align | ID | FLOAT ;
 
 Paren:  '(' content=Expr ')' ;
 Mean: 'mean' '(' vector=ID ')' ;
-Project: vector=ID '[' index = Expr ']' ;
+Align: 'align' '(' vector=ID ')' ;
