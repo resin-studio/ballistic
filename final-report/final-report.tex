@@ -87,7 +87,7 @@ distribution of the data in relation to the equation.
 Unfortunately, this solution leaves open another problem. How do we conjure up some 
 initial belief about the distributions and shape of the equation? 
 
-To avoid needing to specify these, we simply specification further, such that the 
+To avoid needing to specify these, we simply the specification further, such that the 
 user can simply state the data and its relation to inputs and outputs. 
 
 \begin{lstlisting}[language=Python]
@@ -100,9 +100,11 @@ The first part of the solution compiles a program in the DSL into a Pyro model a
 
 The second part of the solution encodes the DSL grammar and semantics into
 an logical formula in Z3 \cite{} and uses Z3's \textit{SMT} \cite{} algorithm to search
-for a program with priors. 
+for a program with priors.  
 The particular technique for constructing the search space from the grammar and semantics 
-based on that of Ellis et al \cite{}.
+is based on that of Ellis et al \cite{}.
+Unfortunately, at the time of this writing, Z3 does not terminate in a reasonable amount of time, 
+despite using an encoding very similar to that of Ellis et al. 
 After finding the program, the first part may be used to learn posteriors. 
 
 
