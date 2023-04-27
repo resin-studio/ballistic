@@ -305,11 +305,11 @@ class ParenTree:
 
 @dataclass(frozen=True, eq=True)
 class MeanTree:
-    vector : str 
+    plate : str 
 
 @dataclass(frozen=True, eq=True)
 class AlignTree:
-    vector : str 
+    plate : str 
 
 @dataclass(frozen=True, eq=True)
 class IdTree:
@@ -441,7 +441,7 @@ class Spacer:
         return SearchSpace(choices, dlen, outcol, And(constraint))
 
 
-    def to_body(self, plates_in_scope : dict[str, list[list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[BodyOption]:
+    def to_body(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[BodyOption]:
         spaces : list[SubSpace[BodyOption]] = []
 
         if self.body_fuel > 0: 
@@ -474,12 +474,12 @@ class Spacer:
                 plate_sizes = range(1, self.plate_size_max + 1)
                 for plate_size in plate_sizes:
 
-                    src, plate_weight_matrix = self.to_dist(plates_in_scope, vars_in_scope, plate_size)   
+                    src, plate_cols = self.to_dist(plates_in_scope, vars_in_scope, plate_size)   
 
                     plate_base = self.fresh_plate_base()
 
                     plates_in_scope_ = plates_in_scope.copy() 
-                    plates_in_scope_[plate_base] = plate_weight_matrix 
+                    plates_in_scope_[plate_base] = plate_cols 
 
                     contin : SearchSpace = self.to_body(plates_in_scope_, vars_in_scope)
 
@@ -515,17 +515,34 @@ class Spacer:
 
 
     def to_dist(self, 
-                plates_in_scope : dict[str, list[list[ArithRef]]], 
+                plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], 
                 vars_in_scope : dict[str, list[ArithRef]],
                 plate_size : int = 1, 
-            ) -> tuple[SearchSpace[DistroOption], list[list[ArithRef]]]:
+            ) -> tuple[SearchSpace[DistroOption], tuple[list[ArithRef], list[ArithRef]]]:
 
         spaces : list[SubSpace[DistroOption]] = []
+        outcol = [self.fresh_weight() for _ in self.input_data]
 
-        if plate_size < 1:
-            plate_size = 1
+        plate_mean_col = [] 
+        plate_align_col = []
+        if plate_size > 0:
+            plate_weight_matrix = [[self.fresh_weight() for i in range(plate_size)] for _ in self.input_data] 
+            plate_mean_col = [] 
+            for plate_row in plate_weight_matrix: 
+                mean_weight = Sum(plate_row) / RealVal(len(plate_row))
+                plate_mean_col.append(mean_weight)
 
-        result_weight_matrix = [[self.fresh_weight() for i in range(plate_size)] for _ in self.input_data] 
+            plate_align_col = []
+            for col_idx in range(plate_size): 
+                plate_col = []
+                for plate_weights in plate_weight_matrix: 
+                    plate_col.append(plate_weights[col_idx])
+                plate_col_mean = Sum(plate_col) / RealVal(len(plate_col))
+                plate_align_col.append(plate_col_mean)
+            plate_align_col = (plate_align_col * (math.ceil(len(self.input_data)/plate_size)))[:len(self.input_data)]
+
+            outcol = plate_align_col
+        
 
         def scope_normal():
             # Normal
@@ -533,11 +550,10 @@ class Spacer:
             sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for result_row, output_mean, output_sigma in zip(result_weight_matrix, mean.outcol, sigma.outcol): 
-                lower = output_mean - 3 * output_sigma 
-                upper = output_mean + 3 * output_sigma
-                for result_weight in result_row:
-                    constraints.append(And([output_sigma > 0, lower <= result_weight, result_weight <= upper]))
+            for out, mean_out, sigma_out in zip(outcol, mean.outcol, sigma.outcol): 
+                lower = mean_out - 3 * sigma_out 
+                upper = mean_out + 3 * sigma_out
+                constraints.append(And([sigma_out > 0, lower <= out, out <= upper]))
 
             spaces.append(SubSpace(
                 tree = NormalTree(
@@ -545,7 +561,7 @@ class Spacer:
                     sigma = sigma.tree
                 ),   
                 dlen = mean.dlen + sigma.dlen,
-                outcol = [row[0] for row in result_weight_matrix],
+                outcol = outcol,
                 constraint = And([mean.constraint, sigma.constraint] + constraints)
             ))
         # scope_normal()
@@ -555,7 +571,7 @@ class Spacer:
             sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for result_row, mean_out, sigma_out in zip(result_weight_matrix, mean.outcol, sigma.outcol): 
+            for out, mean_out, sigma_out in zip(outcol, mean.outcol, sigma.outcol): 
                 sigma_sq = sigma_out ** 2 
 
                 mode = e ** (mean_out - sigma_sq)
@@ -566,10 +582,9 @@ class Spacer:
 
                 lower = mode / 2
                 upper = lmean + skewness
-                for result_weight in result_row:
-                    constraints.append(
-                        And(sigma_out > 0, lower < upper, lower <= result_weight, result_weight <= upper)
-                    )
+                constraints.append(
+                    And(sigma_out > 0, lower < upper, lower <= out, out <= upper)
+                )
 
 
 
@@ -579,7 +594,7 @@ class Spacer:
                     sigma = sigma.tree
                 ),   
                 dlen = mean.dlen + sigma.dlen,
-                outcol = [row[0] for row in result_weight_matrix],
+                outcol = outcol,
                 constraint = And([mean.constraint, sigma.constraint] + constraints)
             ))
         # scope_lognorm()
@@ -589,11 +604,10 @@ class Spacer:
             high = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for result_row, low_out, high_out in zip(result_weight_matrix, low.outcol, high.outcol): 
-                for result_weight in result_row:
-                    constraints.append(
-                        And(low_out < high_out, low_out <= result_weight, result_weight <= high_out)
-                    )
+            for out, low_out, high_out in zip(outcol, low.outcol, high.outcol): 
+                constraints.append(
+                    And(low_out < high_out, low_out <= out, out <= high_out)
+                )
 
             spaces.append(SubSpace(
                 tree = UniformTree(
@@ -601,7 +615,7 @@ class Spacer:
                     high = high.tree
                 ), 
                 dlen = low.dlen + high.dlen,
-                outcol = [row[0] for row in result_weight_matrix],
+                outcol = outcol,
                 constraint = And([low.constraint, high.constraint] + constraints)
             ))
         # scope_uniform()
@@ -612,11 +626,10 @@ class Spacer:
             scale = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for result_row, scl in zip(result_weight_matrix, scale.outcol): 
+            for out, scl in zip(outcol, scale.outcol): 
                 lower = RealVal(0)
                 upper = 3 * scl 
-                for result_weight in result_row:
-                    constraints.append(And(scl > 0, lower <= result_weight, result_weight <= upper))
+                constraints.append(And(scl > 0, lower <= out, out <= upper))
 
 
             spaces.append(SubSpace(
@@ -624,7 +637,7 @@ class Spacer:
                     scale = scale.tree,
                 ),   
                 dlen = scale.dlen,
-                outcol = [row[0] for row in result_weight_matrix],
+                outcol = outcol,
                 constraint = And([scale.constraint] + constraints)
             ))
         # scope_halfnorm()
@@ -634,10 +647,8 @@ class Spacer:
             content = self.to_expr(plates_in_scope, vars_in_scope)
             
             constraints = []
-            for result_row, v in zip(result_weight_matrix, content.outcol): 
-                for result_weight in result_row:
-                    constraints.append(v == result_weight)
-
+            for out, v in zip(outcol, content.outcol): 
+                constraints.append(v == out)
 
             spaces.append(SubSpace(
                 tree = DirectTree(
@@ -651,10 +662,10 @@ class Spacer:
 
         # Combine
 
-        return (self.combine(spaces), result_weight_matrix)
+        return (self.combine(spaces), (plate_mean_col, plate_align_col))
 
 
-    def to_expr(self, plates_in_scope : dict[str, list[list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SubSpace[ExprTree]:
+    def to_expr(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SubSpace[ExprTree]:
         base = self.to_prod(plates_in_scope, vars_in_scope)
         exts = []
         for i in range(self.exts_max): 
@@ -681,7 +692,10 @@ class Spacer:
 
         return SubSpace(tree, dlen, outcol, And(constraints))
 
-    def to_prod(self, plates_in_scope : dict[str, list[list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SubSpace[ProdTree]:
+    def to_prod(self, 
+                plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], 
+                vars_in_scope : dict[str, list[ArithRef]]
+    ) -> SubSpace[ProdTree]:
 
         base = self.to_atom(plates_in_scope, vars_in_scope)
         factors = []
@@ -709,7 +723,9 @@ class Spacer:
 
         return SubSpace(tree, dlen, outcol, And(constraints))
 
-    def to_ext(self, plates_in_scope : dict[str, list[list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[ExtOption]:
+    def to_ext(self, 
+               plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], 
+               vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[ExtOption]:
         spaces : list[SubSpace[ExtOption]] = []
 
         def scope_plus():
@@ -739,7 +755,7 @@ class Spacer:
         # Combine
         return self.combine(spaces)
 
-    def to_factor(self, plates_in_scope : dict[str, list[list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[FactorOption]:
+    def to_factor(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[FactorOption]:
 
 
         spaces : list[SubSpace[FactorOption]] = []
@@ -773,7 +789,7 @@ class Spacer:
         return self.combine(spaces)
 
 
-    def to_atom(self, plates_in_scope : dict[str, list[list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[AtomOption]:
+    def to_atom(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[AtomOption]:
         spaces : list[SubSpace[AtomOption]] = []
 
         if self.expr_fuel > 0:
@@ -793,47 +809,25 @@ class Spacer:
 
 
 
-        # TODO: plate is not a matrix, it is two cols: a mean col and an align col.
-        # def scope_mean():
+        def scope_mean():
+            for plate, (mean_col, _) in plates_in_scope.items():
+                spaces.append(SubSpace(
+                    tree = MeanTree(plate),     
+                    dlen = RealVal(1),
+                    outcol = mean_col,
+                    constraint=And()
+                ))
+        scope_mean()
 
-        #     for plate_base, weight_matrix in plates_in_scope.items():
-
-        #         mean_weights = []
-        #         for plate_weights in weight_matrix: 
-        #             mean_weight = Sum(plate_weights) / RealVal(len(plate_weights))
-        #             mean_weights.append(mean_weight)
-
-        #         spaces.append(SubSpace(
-        #             tree = MeanTree(
-        #                 vector = plate_base
-        #             ),     
-        #             dlen = RealVal(1),
-        #             outcol = mean_weights,
-        #             constraint=And()
-        #         ))
-        # scope_mean()
-
-        # TODO
-        # def scope_align():
-        #     for plate_base, plate_weight_matrix in plates_in_scope.items():
-
-        #         align_outcol = [] 
-        #         for idx, row in zip(index.outcol, plate_weight_matrix):
-        #             result = ArithRef(0) 
-        #             for i, w in enumerate(row):
-        #                 result = If(i == idx, w, result)
-        #             align_outcol.append(result)
-
-        #         spaces.append(SubSpace(
-        #             tree = AlignTree(
-        #                 vector = plate_base,
-        #             ),     
-        #             dlen = RealVal(1) + index.dlen,
-        #             outcol = align_outcol,
-        #             constraint=And()
-        #         ))
-        # scope_align()
-            
+        def scope_align():
+            for plate, (_, align_col) in plates_in_scope.items():
+                spaces.append(SubSpace(
+                    tree = MeanTree(plate),     
+                    dlen = RealVal(1),
+                    outcol = align_col,
+                    constraint=And()
+                ))
+        scope_align()
 
         def scope_params():
             for id in (self.params):
@@ -963,9 +957,9 @@ class Extractor:
         if isinstance(tree, ParenTree):
             return '(' + self.from_expr(tree.content)  + ')'
         elif isinstance(tree, MeanTree):
-            return f'mean({tree.vector})'
+            return f'mean({tree.plate})'
         elif isinstance(tree, AlignTree):
-            return f'align({tree.vector})'
+            return f'align({tree.plate})'
         elif isinstance(tree, IdTree):
             return tree.content
         elif isinstance(tree, FloatTree):

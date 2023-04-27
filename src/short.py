@@ -48,5 +48,7 @@ import math
 import math
 # print(1. * torch.tensor([2,3,4]))
 
-for x in (range(1, 2)):
-    print(x)
+# for x in (range(1, 2)):
+#     print(x)
+
+print([1,2,3] * 2)
