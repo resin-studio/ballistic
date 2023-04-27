@@ -36,8 +36,8 @@ if __name__ == "__main__":
     data_train = torch.tensor(df.values, dtype=torch.float)
 
     ########################
-    result = prog.generate_function(util.resource('examples/gdp.bll'), data_train)
-
+    result = prog.generate_function(util.resource('examples/gdp_spec.bll'), data_train)
+    # result = prog.generate_function(util.resource('examples/gdp.bll'), data_train)
     ########################
     # x1 = (data_train[45,0].item())
     # x2 = (data_train[45,1].item())
@@ -75,33 +75,3 @@ if __name__ == "__main__":
     ax[1].set(xlabel="Terrain Ruggedness Index", ylabel="log GDP (2000)", title="African Nations");
 
     plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-    # print(f'''
-    # -------------------------
-    # {util.resource("bll.tx")}
-    # -------------------------
-    # {util.project_path()}
-    # -------------------------
-    # ''')
-    # pass
-
-# is_cont_africa, ruggedness => 
-# {log_gdp | is_cont_africa, ruggedness, log_gdp : data} ~
-#     normal(0., 10.) @ a =>
-#     normal(0., 1.) @ b_a =>
-#     normal(0., 1.) @ b_r =>
-#     normal(0., 1.) @ b_ar =>
-#     uniform(0., 10.) @ sigma =>
-#     direct(a + b_a * is_cont_africa + b_r * ruggedness + b_ar * is_cont_africa * ruggedness) @ mean =>
-#     normal(mean, sigma)

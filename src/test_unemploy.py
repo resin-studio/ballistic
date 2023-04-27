@@ -64,9 +64,8 @@ import math
 
 def test_generate():
     result = prog.generate_function(util.resource('examples/unemploy.bll'), data)
-    multi = result.multi
 
-    prediction = multi(data[:,0])
+    prediction = result.multi(data[:,0])
     # print(prediction)
 
     #########################

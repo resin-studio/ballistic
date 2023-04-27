@@ -1,35 +1,57 @@
 # ballistic
 
-# TODO
+Bayesian regression synthesis
+
+## TODO
+- comment out everything except direct, see if it can synthesize addition.
+
+## notice
+- the relation between inputs and outputs is connected via smt constraints and terms
+    - the loss is defined by the noise formula, which is defined from output terms and sample data 
+    - the solver slows down when constraints are added over the loss 
+- lots of trial and error with constraints to improve SMT performance; of little avail
+- need to distinguish between fresh vars and fresh weights
+- need to maintain context mapping variables to weights
+    - this is not part of Unsupervised work by Ellis et al.
+- need to associated constraint with each choice, due to distributions
+- need to use min and max of samples to form boundary of distributions
+- solving hangs forever: 
+    - tried removing various distribution constraints. any one causes major slow down.
+    - tried making constraints only be required if control is on; still slow.
+    - tried using terms instead of constraints; still slow
+    - tried switching between solved weights and enumerated digits; both slow 
+    - tried removing powers/exponents; still slow
+
+## TODO
 - reproduce time series unemployment claim example
     - why doesn't the line fit the data properly?
     - does the log transform help/hurt? 
 - add vector concept to type universe
 
 
-# type universe
+## type universe
 - the type universe is the language of types
 - either a type consists of of a base and a predicate, or a type is Top 
 - the base is with respect to a category in the grammar
 - the predicate could be a range or some way of narrowing the scope the type
 - the bases include input numbers, distributions, and reals
 
-# type abstraction
+## type abstraction
 - a type abstraction is a set of types that may be used in verification
 - the set of types is refined with each iteration 
 
-# concrete tree automata
+## concrete tree automata
 - the concrete automaton verifies that an expression would evaluate to an acceptable value   
 
-# abstract semantics
+## abstract semantics
 - the meaning of expressions in terms of types
 - applying an expression to an input is not included
 
-# abstract evaluation 
+## abstract evaluation 
 - the meaning of expressions in terms of types evaluated on input
 - a simple wrapper around abstract semantics
 
-# abstract tree automata
+## abstract tree automata
 - the abstract automaton verifies that an expression would evaluate to an acceptable type 
 - constructed from the data, grammar, type abstraction, and abstract semantics 
 - the type for an expression in the automaton is an over-approximation the the abstract semantics of the expression
@@ -120,6 +142,18 @@
     - let threshold' be discrepancy between mean output and observed output 
     - if threshold' >= threshold: terminate
     - else: update threshold to threshold' 
+
+## synthesis approach questions
+- we can use the actual input data in the SMT formula as supervision
+- do we need to encode dependency between sample variables and distribution (and distribution arguments)?
+    - probably yes. we can construct a range or equality constraint from the distribution type, its mean (and possibly its standard deviation)
+    - can't encode the soft constraints of distributions
+- how does the constraint between description length constraint and reconstruction error influence SMT search? 
+    - the description length is tied to the control bits in the SMT formula
+    - this is how we encode soft constraints
+- how do we encode an AST into an SMT formula?
+- how do we decode an AST back from the SMT formula?
+
 
 
 ## Example

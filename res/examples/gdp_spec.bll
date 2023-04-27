@@ -1,0 +1,1 @@
+is_cont_africa, ruggedness => {log_gdp | is_cont_africa, ruggedness, log_gdp : data}
