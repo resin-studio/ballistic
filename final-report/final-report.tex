@@ -221,10 +221,12 @@ The technique for encoding a space of programs is far more intricate than compil
 
 It constructs a search space recursively by following the structure of the grammar. 
 If the syntax allows a choice of productions, it constructs a boolean control variable for each choice
-and constructs a an if-then-else term across each choice's abstract value, guarded its respective control variable. 
-Additionally, it constructs the constraint that at most one control variable for a particular set of choices    
-is allowed to be true, which along with the if-then-else constraint, ensures
-that exactly one subterm for each choice is identified, if there is a solution.  
+and constructs an if-then-else term across each choice's abstract value, guarded its respective control variable. 
+The abstract value can be broken into two parts: a column\footnote{
+To illustrate the concept of propagating Z3 terms we assume there's just one column.
+In actuality, due to the plate concept, we have two columns: 
+one for the mean and one for the align values of the plate.  
+} of Z3 terms (one term per instance in the dataset) and a constraint.
 
 For example, consider the part of the grammar for constructing sampling and distributions:
 
@@ -240,15 +242,35 @@ For example, consider the part of the grammar for constructing sampling and dist
   \end{array}
 \]
 
-This could generate the following constraint in Z3:
+
+This could generate the following column of terms in Z3:
+\[
+  \kappa_b[i] \triangleq
+  \begin{array}[t]{l}
+  \text{ite}(c_1, \llbracket \kappa_x[i]\ \sim\ \kappa_d[i]\ ;\ \kappa_b'[i]  \rrbracket, \\
+    \hspace{4mm}\text{ite}(c_2, \llbracket \kappa_x[i]\ \#\ \kappa_n[i]\ \sim\ \kappa_d[i]\ ;\ \kappa_b'[i] \rrbracket, \\
+        \hspace{8mm}\text{ite}(c_3, \llbracket \kappa_d[i] \rrbracket, \bot)))
+  \end{array}
+\]
+
+Likewise, this could generate the following constraint in Z3:
 \[
   \phi_b \triangleq
   \begin{array}[t]{l}
   \text{ite}(c_1, \llbracket \phi_x\ \sim\ \phi_d\ ;\ \phi_b'  \rrbracket, \\
     \hspace{4mm}\text{ite}(c_2, \llbracket \phi_x\ \#\ \phi_n\ \sim\ \phi_d\ ;\ \phi_b' \rrbracket, \\
         \hspace{8mm}\text{ite}(c_3, \llbracket \phi_d \rrbracket, \bot)))
-  \ \wedge\ (\bigwedge\nolimits_i \bigwedge\nolimits_j (c_i = c_j) \vee \neg (c_i \wedge c_j) )
   \end{array}
+\]
+
+It propagates description lengths for each subterm in a similar fashion.
+
+Additionally, it constructs the constraint such that at most one control variable for a particular set of choices    
+is allowed to be true, which along with the if-then-else constraint, ensures
+that exactly one subterm for each choice is identified, if there is a solution.  
+
+\[
+  \bigwedge\nolimits_i \bigwedge\nolimits_j (c_i = c_j) \vee \neg (c_i \wedge c_j) 
 \]
 
 
