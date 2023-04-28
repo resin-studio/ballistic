@@ -446,7 +446,8 @@ class Spacer:
             for i in range(len(self.input_data)):
                 out_align = RealVal(0) 
                 for (control, space) in control_spaces:
-                    out_align = If(control, space.outcol.align[i], out_align)
+                    if len(space.outcol.align) > 0:
+                        out_align = If(control, space.outcol.align[i], out_align)
                 outcol_align.append(out_align)
 
         outcol = Column(outcol_mean, outcol_align)
@@ -477,11 +478,11 @@ class Spacer:
                         src = src.tree,
                         contin = contin.tree
                     ),     
-                    dlen = src.dlen +  contin.dlen,
+                    dlen = src.dlen + contin.dlen,
                     outcol = contin.outcol,
                     constraint = And(src.constraint, contin.constraint) 
                 ))
-            # scope_sample()
+            scope_sample()
 
             def scope_plates():
                 if self.plate_size_max <= 1:
@@ -510,7 +511,7 @@ class Spacer:
                         outcol = contin.outcol,
                         constraint = And(src.constraint, contin.constraint) 
                     ))
-            # scope_plates()
+            scope_plates()
 
         def scope_final():
 
@@ -585,7 +586,7 @@ class Spacer:
                 outcol = outcol,
                 constraint = And([mean.constraint, sigma.constraint] + constraints)
             ))
-        # scope_normal()
+        scope_normal()
 
         def scope_lognorm():
             mean = self.to_expr(plates_in_scope, vars_in_scope)
@@ -618,7 +619,7 @@ class Spacer:
                 outcol = outcol,
                 constraint = And([mean.constraint, sigma.constraint] + constraints)
             ))
-        # scope_lognorm()
+        scope_lognorm()
 
         def scope_uniform():
             low = self.to_expr(plates_in_scope, vars_in_scope)
@@ -639,7 +640,7 @@ class Spacer:
                 outcol = outcol,
                 constraint = And([low.constraint, high.constraint] + constraints)
             ))
-        # scope_uniform()
+        scope_uniform()
 
 
         # Halfnorm
@@ -661,7 +662,7 @@ class Spacer:
                 outcol = outcol,
                 constraint = And([scale.constraint] + constraints)
             ))
-        # scope_halfnorm()
+        scope_halfnorm()
 
         def scope_direct():
             # Direct
@@ -1048,7 +1049,7 @@ def synthesize_body(search_space : SearchSpace[BodyOption], output_data) -> tupl
     s.add(loss_var == search_space.dlen + noise_total)
 
     model = None
-    solve_max = 3 
+    solve_max = 1 
 
     new_loss = 0
     # print(f'-------checking below ---------')
@@ -1089,10 +1090,10 @@ def noise(expected : ArithRef, actual : ArithRef):
     ## log p = - n
     ## p = e(-n)
     ## p = 1/e^n
-    # return ((actual - expected) ** 2)
+    return ((actual - expected) ** 2)
     # return ((actual - expected) ** 2) / 2
     # return  If(actual > expected, (actual - expected) / 2, (expected - actual) /2)
-    return  If(actual > expected, actual - expected, expected - actual)
+    # return  If(actual > expected, actual - expected, expected - actual)
 
 
 def generate_function(file, data=None):
