@@ -341,6 +341,11 @@ def extract_fields(labels, fields, data : Tensor) -> Tensor:
 def extract_field(label, fields, data : Tensor) -> Tensor:
     return data[:, fields.index(label)]
 
+@dataclass(frozen=True, eq=True)
+class Column(Generic[T]):
+    mean : list[ArithRef]
+    align : list[ArithRef]
+
 
 @dataclass(frozen=True, eq=True)
 class SearchSpace(Generic[T]):
@@ -349,7 +354,7 @@ class SearchSpace(Generic[T]):
     # 1: a description length 
     dlen: ArithRef 
     # 2: an output column as an smt formula built form control variables and input data
-    outcol: list[ArithRef]
+    outcol: Column 
     # 3: constraints 
     constraint : Probe | BoolRef
 
@@ -360,7 +365,7 @@ class SubSpace(Generic[T]):
     # 1: a description length 
     dlen: ArithRef 
     # 2: an output column as an smt formula built form control variables and input data
-    outcol: list[ArithRef]
+    outcol: Column 
     # 3
     constraint : Probe | BoolRef 
 
@@ -428,12 +433,23 @@ class Spacer:
 
         dlen = RealVal(math.log(len(spaces))) + dlr
 
-        outcol = []
+        outcol_mean = []
         for i in range(len(self.input_data)):
-            result = RealVal(0) 
+            out_mean = RealVal(0) 
             for (control, space) in control_spaces:
-                result = If(control, space.outcol[i], result)
-            outcol.append(result)
+                out_mean = If(control, space.outcol.mean[i], out_mean)
+            outcol_mean.append(out_mean)
+
+        outcol_align = []
+        some_align_col = next((True for space in spaces if len(space.outcol.align) > 0), False)
+        if some_align_col:
+            for i in range(len(self.input_data)):
+                out_align = RealVal(0) 
+                for (control, space) in control_spaces:
+                    out_align = If(control, space.outcol.align[i], out_align)
+                outcol_align.append(out_align)
+
+        outcol = Column(outcol_mean, outcol_align)
 
         controls = [control for (control, _) in control_spaces]
         constraint = And(constraint, not_pairs(controls))
@@ -441,14 +457,14 @@ class Spacer:
         return SearchSpace(choices, dlen, outcol, And(constraint))
 
 
-    def to_body(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[BodyOption]:
+    def to_body(self, plates_in_scope : dict[str, Column], vars_in_scope : dict[str, Column]) -> SearchSpace[BodyOption]:
         spaces : list[SubSpace[BodyOption]] = []
 
         if self.body_fuel > 0: 
             self.body_fuel -= 1
 
             def scope_sample():
-                src, _= self.to_dist(plates_in_scope, vars_in_scope)   
+                src = self.to_dist(plates_in_scope, vars_in_scope)   
                 id = self.fresh_var() 
 
                 vars_in_scope_ = vars_in_scope.copy() 
@@ -474,12 +490,12 @@ class Spacer:
                 plate_sizes = range(1, self.plate_size_max + 1)
                 for plate_size in plate_sizes:
 
-                    src, plate_cols = self.to_dist(plates_in_scope, vars_in_scope, plate_size)   
+                    src = self.to_dist(plates_in_scope, vars_in_scope, plate_size)   
 
                     plate_base = self.fresh_plate_base()
 
                     plates_in_scope_ = plates_in_scope.copy() 
-                    plates_in_scope_[plate_base] = plate_cols 
+                    plates_in_scope_[plate_base] = src.outcol 
 
                     contin : SearchSpace = self.to_body(plates_in_scope_, vars_in_scope)
 
@@ -498,7 +514,7 @@ class Spacer:
 
         def scope_final():
 
-            content, _ = self.to_dist(plates_in_scope, vars_in_scope)   
+            content = self.to_dist(plates_in_scope, vars_in_scope)   
 
             spaces.append(SubSpace( 
                 tree = FinalTree(
@@ -515,13 +531,15 @@ class Spacer:
 
 
     def to_dist(self, 
-                plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], 
-                vars_in_scope : dict[str, list[ArithRef]],
+                plates_in_scope : dict[str, Column], 
+                vars_in_scope : dict[str, Column],
                 plate_size : int = 1, 
-            ) -> tuple[SearchSpace[DistroOption], tuple[list[ArithRef], list[ArithRef]]]:
+            ) -> SearchSpace[DistroOption]:
 
         spaces : list[SubSpace[DistroOption]] = []
-        outcol = [self.fresh_weight() for _ in self.input_data]
+        outcol_mean = [self.fresh_weight() for _ in self.input_data]
+        outcol_align = []
+
 
         plate_mean_col = [] 
         plate_align_col = []
@@ -541,7 +559,10 @@ class Spacer:
                 plate_align_col.append(plate_col_mean)
             plate_align_col = (plate_align_col * (math.ceil(len(self.input_data)/plate_size)))[:len(self.input_data)]
 
-            outcol = plate_align_col
+            outcol_mean = plate_mean_col 
+            outcol_align = plate_align_col
+        
+        outcol = Column(outcol_mean, outcol_align)
         
 
         def scope_normal():
@@ -550,7 +571,7 @@ class Spacer:
             sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for out, mean_out, sigma_out in zip(outcol, mean.outcol, sigma.outcol): 
+            for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
                 lower = mean_out - 3 * sigma_out 
                 upper = mean_out + 3 * sigma_out
                 constraints.append(And([sigma_out > 0, lower <= out, out <= upper]))
@@ -571,7 +592,7 @@ class Spacer:
             sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for out, mean_out, sigma_out in zip(outcol, mean.outcol, sigma.outcol): 
+            for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
                 sigma_sq = sigma_out ** 2 
 
                 mode = e ** (mean_out - sigma_sq)
@@ -604,7 +625,7 @@ class Spacer:
             high = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for out, low_out, high_out in zip(outcol, low.outcol, high.outcol): 
+            for out, low_out, high_out in zip(outcol.mean, low.outcol.mean, high.outcol.mean): 
                 constraints.append(
                     And(low_out < high_out, low_out <= out, out <= high_out)
                 )
@@ -626,7 +647,7 @@ class Spacer:
             scale = self.to_expr(plates_in_scope, vars_in_scope)
 
             constraints = []
-            for out, scl in zip(outcol, scale.outcol): 
+            for out, scl in zip(outcol.mean, scale.outcol.mean): 
                 lower = RealVal(0)
                 upper = 3 * scl 
                 constraints.append(And(scl > 0, lower <= out, out <= upper))
@@ -647,7 +668,7 @@ class Spacer:
             content = self.to_expr(plates_in_scope, vars_in_scope)
             
             constraints = []
-            for out, v in zip(outcol, content.outcol): 
+            for out, v in zip(outcol.mean, content.outcol.mean): 
                 constraints.append(v == out)
 
             spaces.append(SubSpace(
@@ -662,19 +683,34 @@ class Spacer:
 
         # Combine
 
-        return (self.combine(spaces), (plate_mean_col, plate_align_col))
+        return self.combine(spaces)
 
 
-    def to_expr(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SubSpace[ExprTree]:
+    def to_expr(self, plates_in_scope : dict[str, Column], 
+                vars_in_scope : dict[str, Column]) -> SubSpace[ExprTree]:
         base = self.to_prod(plates_in_scope, vars_in_scope)
         exts = []
         for i in range(self.exts_max): 
             exts.append(self.to_ext(plates_in_scope, vars_in_scope))
 
-        outcol = base.outcol 
-        for i in range(len(self.input_data)):
-            for ext in exts:
-                outcol[i] = outcol[i] + ext.outcol[i]
+        outcol_mean = base.outcol.mean
+        outcol_align = base.outcol.align 
+        for ext in exts:
+            col_size = len(self.input_data)
+            for i in range(col_size):
+                outcol_mean[i] = outcol_mean[i] + ext.outcol.mean[i]
+
+            if len(outcol_align) > 0 or len(ext.outcol.align) > 0 : 
+                if (len(outcol_align) <= 0):
+                    outcol_align = outcol_mean  
+
+                if (len(ext.outcol.align) <= 0):
+                    ext.outcol.align = ext.outcol.mean  
+
+                for i in range(col_size):
+                    outcol_align[i] = outcol_align[i] + ext.outcol.align[i]
+
+        outcol = Column(outcol_mean, outcol_align)
 
 
         dlen = RealVal(math.log(1 + len(exts))) + base.dlen
@@ -693,8 +729,8 @@ class Spacer:
         return SubSpace(tree, dlen, outcol, And(constraints))
 
     def to_prod(self, 
-                plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], 
-                vars_in_scope : dict[str, list[ArithRef]]
+                plates_in_scope : dict[str, Column], 
+                vars_in_scope : dict[str, Column]
     ) -> SubSpace[ProdTree]:
 
         base = self.to_atom(plates_in_scope, vars_in_scope)
@@ -702,10 +738,24 @@ class Spacer:
         for i in range(self.factors_max): 
             factors.append(self.to_factor(plates_in_scope, vars_in_scope))
 
-        outcol = base.outcol 
-        for i in range(len(self.input_data)):
-            for factor in factors:
-                outcol[i] = outcol[i] * factor.outcol[i]
+        outcol_mean = base.outcol.mean
+        outcol_align = base.outcol.align 
+        for factor in factors:
+            col_size = len(self.input_data)
+            for i in range(col_size):
+                outcol_mean[i] = outcol_mean[i] * factor.outcol.mean[i]
+
+            if len(outcol_align) > 0 or len(factor.outcol.align) > 0 : 
+                if (len(outcol_align) <= 0):
+                    outcol_align = outcol_mean  
+
+                if (len(factor.outcol.align) <= 0):
+                    factor.outcol.align = factor.outcol.mean  
+
+                for i in range(col_size):
+                    outcol_align[i] = outcol_align[i] * factor.outcol.align[i]
+
+        outcol = Column(outcol_mean, outcol_align)
 
 
         dlen = RealVal(math.log(1 + len(factors))) + base.dlen
@@ -724,8 +774,8 @@ class Spacer:
         return SubSpace(tree, dlen, outcol, And(constraints))
 
     def to_ext(self, 
-               plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], 
-               vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[ExtOption]:
+               plates_in_scope : dict[str, Column], 
+               vars_in_scope : dict[str, Column]) -> SearchSpace[ExtOption]:
         spaces : list[SubSpace[ExtOption]] = []
 
         def scope_plus():
@@ -747,7 +797,10 @@ class Spacer:
                     arg = arg.tree
                 ),   
                 dlen = arg.dlen ,
-                outcol = [-1 * output for output in arg.outcol],
+                outcol = Column(
+                    [-1 * output for output in arg.outcol.mean], 
+                    [-1 * output for output in arg.outcol.align]
+                ),
                 constraint=arg.constraint
             ))
         scope_minus()
@@ -755,7 +808,9 @@ class Spacer:
         # Combine
         return self.combine(spaces)
 
-    def to_factor(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[FactorOption]:
+    def to_factor(self, 
+        plates_in_scope : dict[str, Column], 
+        vars_in_scope : dict[str, Column]) -> SearchSpace[FactorOption]:
 
 
         spaces : list[SubSpace[FactorOption]] = []
@@ -780,7 +835,10 @@ class Spacer:
                     arg = arg.tree
                 ), 
                 dlen = arg.dlen,
-                outcol = [1 / output for output in arg.outcol],
+                outcol = Column(
+                    [1 / output for output in arg.outcol.mean],
+                    [1 / output for output in arg.outcol.align]
+                ),
                 constraint=arg.constraint
             ))
         scope_div()
@@ -789,7 +847,9 @@ class Spacer:
         return self.combine(spaces)
 
 
-    def to_atom(self, plates_in_scope : dict[str, tuple[list[ArithRef], list[ArithRef]]], vars_in_scope : dict[str, list[ArithRef]]) -> SearchSpace[AtomOption]:
+    def to_atom(self, 
+        plates_in_scope : dict[str, Column], 
+        vars_in_scope : dict[str, Column]) -> SearchSpace[AtomOption]:
         spaces : list[SubSpace[AtomOption]] = []
 
         if self.expr_fuel > 0:
@@ -810,21 +870,21 @@ class Spacer:
 
 
         def scope_mean():
-            for plate, (mean_col, _) in plates_in_scope.items():
+            for plate, col in plates_in_scope.items():
                 spaces.append(SubSpace(
                     tree = MeanTree(plate),     
                     dlen = RealVal(1),
-                    outcol = mean_col,
+                    outcol = Column(col.mean, []),
                     constraint=And()
                 ))
         scope_mean()
 
         def scope_align():
-            for plate, (_, align_col) in plates_in_scope.items():
+            for plate, col in plates_in_scope.items():
                 spaces.append(SubSpace(
                     tree = MeanTree(plate),     
                     dlen = RealVal(1),
-                    outcol = align_col,
+                    outcol = Column(col.align, []),
                     constraint=And()
                 ))
         scope_align()
@@ -836,7 +896,7 @@ class Spacer:
                 spaces.append(SubSpace(
                     tree = IdTree(content = id),   
                     dlen = RealVal(1),
-                    outcol = [RealVal(row[pid].item()) for row in self.input_data],
+                    outcol = Column([RealVal(row[pid].item()) for row in self.input_data], []),
                     constraint=And()
                 ))
         scope_params()
@@ -859,7 +919,7 @@ class Spacer:
                     content = weight 
                 ),   
                 dlen = RealVal(2),
-                outcol = [weight for _ in self.input_data],
+                outcol = Column([weight for _ in self.input_data], []),
                 constraint=And()
             ))
 
@@ -978,7 +1038,7 @@ def synthesize_body(search_space : SearchSpace[BodyOption], output_data) -> tupl
     loss_var = Real('_loss_')
     noise_total = Sum([
         noise(output.item(), prediction) 
-        for output, prediction in zip(output_data, search_space.outcol)
+        for output, prediction in zip(output_data, search_space.outcol.mean)
     ])
 
     s.add(search_space.constraint)

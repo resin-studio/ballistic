@@ -1,6 +1,6 @@
 month => {claim | month, claim : data}
     slope ~ normal(0., 1.) ; 
     sd ~ halfnorm(1.) ; 
-    ms # 12 ~ normal(0., 1.) ; 
+    ms # 12 ~ normal(slope, 1.) ; 
     ms ~ @(ms - mean(ms)) ;
     normal(slope * month + align(ms), sd)
