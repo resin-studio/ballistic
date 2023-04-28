@@ -1,7 +1,5 @@
 \documentclass[runningheads]{llncs}
 
-% \documentclass{article}
-
 \usepackage[
 backend=biber,
 style=alphabetic,
@@ -37,9 +35,10 @@ style=alphabetic,
 
 \title{Synthesis of stochastic programs from data}
 \author{Thomas Logan}
-\institute{University of Texas at Austin}
+% \institute{University of Texas at Austin}
 
 \begin{document}
+\pagestyle{plain}
 
 \maketitle
 
@@ -219,7 +218,6 @@ Since the ultimate goal is to extract a program, the procedure also
 builds a tree with choices indexed by control variables, mirroring the Z3 formula.
 Once a solution is found, the program can be extracted from the tree by selecting
 the branches with a true control variable.
-
 For example, consider the part of the grammar for constructing sampling and distributions:
 
 \[
@@ -234,8 +232,7 @@ For example, consider the part of the grammar for constructing sampling and dist
   \end{array}
 \]
 
-This would lead to a search space tree that looks as follows:
-
+This could lead to a search space tree that looks as follows:
 \[
   \begin{array}{l }
     \{ \\
@@ -244,7 +241,7 @@ This would lead to a search space tree that looks as follows:
         \hspace{12mm} c_5 \mapsto \text{lognorm}(\hdots), \\ 
         \hspace{12mm} \vdots \\
     \hspace{6mm}\},\\
-    \hspace{6mm} c_2 \mapsto x_2\ \#\ w\ \sim\ \{ \\
+    \hspace{6mm} c_2 \mapsto x_2\ \#\ n\ \sim\ \{ \\
         \hspace{12mm} c_9 \mapsto \text{normal}(\hdots), \\
         \hspace{12mm} c_{10} \mapsto \text{lognorm}(\hdots), \\ 
         \hspace{12mm} \vdots \\
@@ -259,8 +256,31 @@ This would lead to a search space tree that looks as follows:
   \end{array}
 \]
 
+description length
 
+defining negative log prob
 
+defining loss
+
+iteratively solve adding constraints that the loss
+is smaller than the one just found,
+until no solution can be found.
+
+extract the program using the last solution. 
+
+There are a number of details of this language that require 
+special attention and do not fit neatly into the framework  
+developed by Ellis et al.
+
+Encoding plates: mean and align
+
+to generalize to plates, need to keep track of both a mean column and an align column.
+a plate's mean column is the mean across plate elements for each sample. 
+a plate's align column is the mean across samples and rotated and realigned with number of samples. 
+
+Encoding distribution constraints
+
+Encoding with variables and plates in scope
 
 
 \end{document}
