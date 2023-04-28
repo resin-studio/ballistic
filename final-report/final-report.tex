@@ -144,14 +144,12 @@ The programs in the domain specific language are constructed using the following
     a &{} ::= (e) \ |\ \text{mean}(x) \ |\ \text{align}(x)\\
   \end{array}
 \]
-.
 
 To see what these combinations of syntax mean, consider a program
-for predicting the the number of unemployment insurance claims 
-between the 2008 recession and the 2020 pandemic \cite{plot}.
-Let's examine the plot of the data to gauge its shape.
-\newline
-\begin{figure}
+for predicting the number of unemployment insurance claims 
+between after the 2008 recession and before the 2020 pandemic \cite{plot}.
+Let's examine the plot of the data in Fig. \ref{fig:plot} to gauge its shape.
+\begin{figure}[h]
 \begin{center}
 \includegraphics[scale=0.35]{weekly_claims}
 \end{center}
@@ -159,9 +157,8 @@ Let's examine the plot of the data to gauge its shape.
 \caption{
 Weekly unemployment insurance claims. Source: Martin Jankowiak's slides \cite{plot}.   
 }
+\label{fig:plot}
 \end{figure}
-
-
 There appears to be an overall trend that's fairly linear with respect to the year. 
 However, there are also periodic trends that seem to depend on the time of year.  
 We can capture these trends with the following program:
@@ -175,12 +172,12 @@ t => {n | t, n : data}
     lognorm(m * t + align(bs), osd)
 \end{lstlisting}
 
-The program represents a function from a weekly time index to a number of claims.
+The program represents a point-wise function from a weekly time index to a number of claims.
 The parameter $t$ represents a single input. The variable $n$ represents
 the ouput, such that the first column of the data are used as inputs, 
 and second column of the data are observed outputs.
 The rest of the program is the body of the function.
-First it samples a slope $m$ from a normal distribution centered at 0 with 
+First, it samples a slope $m$ from a normal distribution centered at 0 with 
 a standard deviation of 1. To handle the periodic trends, it constructs
 a plate $bs$ of 52 independent elements, where each is sampled from 
 a normal distribution. In order to ensure the weight $m$ governs
@@ -196,14 +193,14 @@ at an implicit iteration index modulo 52.
 
 \section{Compiling programs into Pyro}
 In order to learn the posterior distributions of our programs, the system compiles a program into  
-a Pyro model and run Pyro's SVI algorithm. For the most part, the compilation technique
+a Pyro model and runs Pyro's SVI algorithm. For the most part, the compilation technique
 is fairly standard, but the $\text{align}(\cdot)$ operator deserves special attention. 
 Pyro's model operates over tensors of data, while the program DSL operates over points. 
-This difference beomes noticeable when compiling the indexing operation. Pyro is
-operating over tensors that are computed via data-parallelism. There is no
+This difference becomes noticeable when compiling the align operation. Tensor operations 
+rely on data-parallelism. There is no
 equivalent data-parallel operation for indexing a matrix with a vector of indices.
-Thus, indexing is actually compiled into repeating the target plate and aligns lengthens it
-to match the size of the implicit number of total iterations.    
+Thus, $\text{align}(\cdot)$ is actually compiled into repeating the target plate until it
+to matches the size of the implicit number of total iterations.    
 The example of unemployment insurance claims above is compiled into the following model.
 
 \begin{lstlisting}[language=Python]
@@ -222,19 +219,20 @@ def model(t, n=None):
 
 \section{Encoding language into Z3}
 In order to search for viable programs, the system encodes the language's syntax and semantics, 
-along with the input data into a Z3 formula and run Z3's SMT algorithm.
+along with the input data into a Z3 formula and runs Z3's SMT algorithm.
 The technique for encoding a space of programs is far more intricate than compiling a program.
+The technique used in this system is based on that of Ellis et al \cite{ellis}.
 
-It constructs a search space recursively by following the structure of the grammar. 
+It constructs a search space recursively by following the structure of the syntax. 
 If the syntax allows a choice of productions, it constructs a boolean control variable for each choice
-and constructs an if-then-else term across each choice's abstract value, guarded its respective control variable. 
+and constructs an if-then-else term across each choice's abstract value, guarded with its respective control variable. 
 The abstract value can be broken into two parts: a column\footnote{
 To illustrate the concept of propagating Z3 terms we assume there's just one column.
 In actuality, due to the plate concept, we have two columns: 
 one for the mean and one for the align values of the plate.  
 } of Z3 terms (one term per instance in the dataset) and a constraint.
 
-For example, consider the part of the grammar for constructing sampling and distributions:
+For example, consider the part of the syntax for constructing the notions of sampling and distributions:
 
 \[
   \begin{array}{l @{} l}
@@ -271,7 +269,7 @@ Likewise, this could generate the following constraint in Z3:
 
 It propagates description lengths for each subterm in a similar fashion.
 
-Additionally, it constructs the constraint such that at most one control variable for a particular set of choices    
+Additionally, the system constructs the constraint such that at most one control variable for a particular set of choices    
 is allowed to be true, which along with the if-then-else constraint, ensures
 that exactly one subterm for each choice is identified, if there is a solution.  
 
@@ -282,16 +280,16 @@ that exactly one subterm for each choice is identified, if there is a solution.
 
 The encoding specifies how leaf terms are denoted as Z3 formulas for each input instance.
 The leaf syntax representing a parameter simply denotes a the corresponding column of the input data. 
-The denotation may be abstract consisting of both a Z3 expression and a constraint on that expression. 
-The formulas of subterm are propagated up to larger composite terms according to the semantics of 
+The denotation may be abstract, consisting of both a Z3 term and a Z3 constraint on that term. 
+The formulas of subterms are propagated up to larger composite terms according to the semantics of 
 the composite terms.
 
 Since the ultimate goal is to extract a program, the procedure also 
 builds a tree with choices indexed by control variables, mirroring the Z3 formula.
 Once a solution is found, the program can be extracted from the tree by selecting
-the branches with a true control variable.
+the branches with a control variable that Z3 declared to be true.
 
-This above mentioned portion of the grammar could lead to a search space tree that looks as follows:
+The above mentioned portion of the syntax could lead to a search space tree that looks as follows:
 \[
   \begin{array}{l }
     \{ \\
@@ -318,7 +316,7 @@ This above mentioned portion of the grammar could lead to a search space tree th
 To measure the correctness of a found program $f$, 
 the synthesis procedure defines a cost in terms of a program's
 description length $-\text{log}\ \text{L}(f)$ and its noise $-\text{log}\ \text{P}(y|f(x)) $.
-A length is associated with each production rule in the grammar.
+A length is associated with each production rule in the syntax.
 Summing together the length across all the nodes of a program results 
 in a total description length for that program. 
 Noise is defined as the distance between the expected and actual results.
@@ -335,8 +333,8 @@ The total cost of a found program is the sum of the description length and the t
 
 The synthesis procedure asks Z3 to search the space for a program
 and its cost. If Z3 finds a program and a cost, the procedure 
-adds the constraint the the cost must be less than one just found
-and asks Z3 to find another. This repeats until Z3 can find a solution.
+adds the constraint that the cost must be less than the cost just found
+and asks Z3 to find another. This repeats until Z3 cannot find a solution.
 The last found program is the best solution. The procedure 
 extracts the program by following the branches indicated by the 
 control variables. 
@@ -347,7 +345,7 @@ developed by Ellis et al.
 
 % Encoding plates: mean and align
 Due to the concept of plates and its 
-$\text{mean}(\cdot)$ and $\text{align}(\cdot)$,
+$\text{mean}(\cdot)$ and $\text{align}(\cdot)$ operators,
 the encoding must actually propagate two columns of output formulas,
 one for mean, and one for align. 
 For non-plate terms that do not produce a plate, they simply
@@ -363,24 +361,25 @@ a plate's align column is the mean across instances in each column, rotated and 
 The encoding handles the semantics of distributions by introducing fresh weight variables  
 and adding constraints over those variables representing a plausible range of values
 within the distribution. For the normal distribution, it requires a lower bound of 
-$\mu - 3 * \sigma$ and a lower bound of and an upper bound of $\mu + 3 * \sigma$,
+$\mu - 3 * \sigma$ and an upper bound of $\mu + 3 * \sigma$,
 where $\mu$ is the center of the distribution, and $\sigma$ is the standard deviation.
 For the log normal distribution, it uses the mode, mean, and skewness to define the boundaries
 of plausible values. 
 
 % Encoding with variables and plates in scope
 Since the language allows assigning variables to expressions, it is necessary to keep track
-of variable scoping and which columns of abstract values are associated with variables. 
+of variable scoping and which columns of abstract values are associated with which variables. 
 Thus, when generating expressions with variables, the encoding is limited to variables that
 are in scope, and their associated abstract values are propagated.
 
 \section{Conclusion}
-This work has presented a solution to the problem of finding stochastic functions that fit data.
+This work has presented an initial solution to the problem of finding stochastic functions that fit data.
 The first part simplifies describing functions with prior beliefs and data by defining a DSL for
 point-wise functions that are implicitly indexed and compiling these simple representations
 into more complicated Pyro models over tensors. It runs Pyro's SVI algorithm to learn the posterior weights. 
 The second part removes the burden of describing the function body by encoding the language and data into a Z3 formula. 
-It iteratively solves the formula and adds a constraint to lower the cost of the found function each iteration.  
+It iteratively solves the formula and adds increasingly strict cost constraints to lower
+the cost of the found function each iteration.  
 The source code can be retrieved from \url{https://github.com/resin-studio/ballistic}.
 
 \newpage
