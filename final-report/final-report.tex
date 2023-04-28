@@ -42,7 +42,7 @@
 % \usepackage[T1]{fontenc}
 
 
-\title{Synthesis of stochastic programs from data}
+\title{Towards synthesis of stochastic programs from data}
 \author{Thomas Logan}
 \institute{University of Texas at Austin}
 
@@ -52,9 +52,15 @@
 \maketitle
 
 \section{Introduction}
-The aim of this project is to automatically synthesize  programs from data sets. 
-The intended scenario consists of a user who wants to fit a line to some data.
-It is quite easy to encode an equation
+This project aims to automate various portions of learning functions from data sets. 
+The intended scenario consists of a user who wants to fit a line to some data
+with some measure of uncertainty. To that end, this project attempts 
+to simplify the notation for describing functions, and 
+to remove the burden of specifying function shapes altogether. The first
+part involves the compilation of programs followed by gradient descent, 
+and the second parts involves the encoding of language followed by symbolic search. 
+
+It is quite easy to describe an equation
 from inputs to outputs in a typical programming language, such as the following:
 \[ f(x) = m x + b \] 
 
@@ -78,7 +84,7 @@ def model(xs, ys=None):
 Clearly, there is a vast increase in notational noise, within which the essence of the idea is buried. 
 
 To reduce the notational noise, this project introduces a simple programming language 
-that allows expressing learnable models in a succinct notation. In this new language,
+that allows expressing differentiable stochastic models in a succinct notation. In this new language,
 we can express a model for learning a linear equation as follows: 
 
 \begin{lstlisting}[language=Python]
@@ -96,20 +102,20 @@ distribution of the data in relation to the equation.
 Unfortunately, this solution leaves open another problem. How do we conjure up some 
 initial belief about the distributions and the shape of the equation? 
 
-To avoid needing to specify these details, we simplify the specification further, such that the 
+To avoid needing to specify these details, we simplify the description further, such that the 
 user can simply state the data and its relation to inputs and outputs. 
 
 \begin{lstlisting}[language=Python]
 x => {y | x, y : data}
 \end{lstlisting}
 
-The first part of the solution compiles a program in the DSL into a Pyro model and applies Pyro's 
+The first part of the solution compiles a program of the DSL into a Pyro model and applies Pyro's 
 \textit{stochastic variational inference} (SVI) algorithm \cite{svi} to learn posterior distributions for the weights. 
 
-The second part of the solution encodes the DSL grammar and semantics into
-an logical formula in Z3 \cite{z3} and uses Z3's \textit{satisfiability modulo theories} (SMT) \cite{smt} algorithm to search
-for a program with priors.  
-The particular technique for constructing the search space from the grammar and semantics 
+The second part of the solution encodes the DSL syntax and semantics into
+a logical formula in Z3 \cite{z3} and uses Z3's \textit{satisfiability modulo theories} (SMT) technique \cite{smt} to search
+for a program.  
+The particular technique for constructing the search space from the syntax and semantics 
 is based on that of Ellis et al \cite{ellis}.
 Unfortunately, at the time of this writing, Z3 does not terminate in a reasonable amount of time, 
 despite using an encoding very similar to that of Ellis et al. 
