@@ -8,8 +8,12 @@
 \usepackage{mathpartir}
 \usepackage{hyperref}
 \usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{nccmath}
 \usepackage{stmaryrd}
+\usepackage{amssymb}
 \usepackage{listings}
+
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -169,7 +173,7 @@ a standard deviation of 1. To handle the periodic trends, it constructs
 a plate $bs$ of 52 independent elements, where each is sampled from 
 a normal distribution. In order to ensure the weight $m$ governs
 the overall trend, we need the values of $bs$ to cancel each other out.
-To this end, the program recomputes the values of the vector point-wise 
+To this end, the program recomputes the values of the plate vector point-wise 
 by subtracting the mean from the original value. The notation $@$ simply indicates
 to use the value of the expression directly.
 The resulting number of claims is drawn from a log normal distribution
@@ -216,16 +220,6 @@ Additionally, it constructs the constraint that at most one control variable for
 is allowed to be true, which along with the if-then-else constraint, ensures
 that exactly one subterm for each choice is identified, if there is a solution.  
 
-The encoding specifies how leaf terms are denoted as Z3 formulas for each input instance.
-The leaf syntax representing a parameter simply denotes a the corresponding column of the input data. 
-The denotation may be abstract consisting of both a Z3 expression and a constraint on that expression. 
-The formulas of subterm are propagated up to larger composite terms according to the semantics of 
-the composite terms.
-
-Since the ultimate goal is to extract a program, the procedure also 
-builds a tree with choices indexed by control variables, mirroring the Z3 formula.
-Once a solution is found, the program can be extracted from the tree by selecting
-the branches with a true control variable.
 For example, consider the part of the grammar for constructing sampling and distributions:
 
 \[
@@ -240,7 +234,30 @@ For example, consider the part of the grammar for constructing sampling and dist
   \end{array}
 \]
 
-This could lead to a search space tree that looks as follows:
+This could generate the following constraint in Z3:
+\[
+  \text{gen}_b \triangleq
+  \begin{array}[t]{l}
+  \text{ite}(c_1, \llbracket \text{gen}_x\ \sim\ \text{gen}_d\ ;\ \text{gen}_b  \rrbracket, \\
+    \hspace{4mm}\text{ite}(c_2, \llbracket \text{gen}_x\ \#\ \text{gen}_n\ \sim\ \text{gen}_d\ ;\ \text{gen}_b \rrbracket, \\
+        \hspace{8mm}\text{ite}(c_3, \llbracket \text{gen}_d \rrbracket, \bot)))
+  \ \wedge\ (\bigwedge\nolimits_i \bigwedge\nolimits_j c_i \neq c_j)
+  \end{array}
+\]
+
+
+The encoding specifies how leaf terms are denoted as Z3 formulas for each input instance.
+The leaf syntax representing a parameter simply denotes a the corresponding column of the input data. 
+The denotation may be abstract consisting of both a Z3 expression and a constraint on that expression. 
+The formulas of subterm are propagated up to larger composite terms according to the semantics of 
+the composite terms.
+
+Since the ultimate goal is to extract a program, the procedure also 
+builds a tree with choices indexed by control variables, mirroring the Z3 formula.
+Once a solution is found, the program can be extracted from the tree by selecting
+the branches with a true control variable.
+
+This above mentioned portion of the grammar could lead to a search space tree that looks as follows:
 \[
   \begin{array}{l }
     \{ \\
@@ -335,14 +352,11 @@ It iteratively solves the formula and adds a constraint to lower the cost of the
 
 \begin{thebibliography}{9}
 
-\bibitem{Python} 
-G. Van Rossum, F.L. Drake. Introduction to python 3: python documentation manual part 1. In CreateSpace, 2009.
-
-\bibitem{plot}
-M. Jankowiak. Retrieved 2023-4-28 from \url{http://docs.mlinpl.org/conference/2019/slides/martin_jankowiak_mlinpl2019.pdf} 
-
 \bibitem{pyro}
 E.Bingham, J.P. Chen, M. Jankowiak, F. Obermeyer, N. Pradhan, T.Karaletsos, R. Singh, P. Szerlip, P. Horsfall and, N.D. Goodman. Pyro: Deep universal probabilistic programming. In JMLR, 2019. 
+
+\bibitem{python} 
+G. Van Rossum, F.L. Drake. Introduction to python 3: python documentation manual part 1. In CreateSpace, 2009.
 
 \bibitem{svi}
 M.D. Hoffman, D.N. Blei, C. Wang, J. Paisley. Stochastic variational inference. In JMLR, 2013.
@@ -356,6 +370,10 @@ Handbook of Satisfiability. IOS Press, 2009.
 
 \bibitem{ellis}
 K. Ellis K, A. Solar-Lezama A, J. Tenenbaum. Unsupervised learning by program synthesis. In NIPS, 2015.
+
+\bibitem{plot}
+M. Jankowiak. Retrieved 2023-4-28 from \url{http://docs.mlinpl.org/conference/2019/slides/martin_jankowiak_mlinpl2019.pdf} 
+
 
 \end{thebibliography}
 
