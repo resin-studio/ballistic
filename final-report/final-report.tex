@@ -241,7 +241,7 @@ This could generate the following constraint in Z3:
   \text{ite}(c_1, \llbracket \text{gen}_x\ \sim\ \text{gen}_d\ ;\ \text{gen}_b  \rrbracket, \\
     \hspace{4mm}\text{ite}(c_2, \llbracket \text{gen}_x\ \#\ \text{gen}_n\ \sim\ \text{gen}_d\ ;\ \text{gen}_b \rrbracket, \\
         \hspace{8mm}\text{ite}(c_3, \llbracket \text{gen}_d \rrbracket, \bot)))
-  \ \wedge\ (\bigwedge\nolimits_i \bigwedge\nolimits_j c_i \neq c_j)
+  \ \wedge\ (\bigwedge\nolimits_i \bigwedge\nolimits_j (c_i = c_j) \vee \neg (c_i \wedge c_j) )
   \end{array}
 \]
 
