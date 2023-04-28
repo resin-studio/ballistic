@@ -107,7 +107,8 @@ Unfortunately, at the time of this writing, Z3 does not terminate in a reasonabl
 despite using an encoding very similar to that of Ellis et al. 
 After finding the program, the first part may be used to learn posteriors. 
 
-\section{Syntax}
+\section{Language}
+
 The programs in the domain specific language are constructed using the following syntax:
 
 \[
@@ -197,7 +198,23 @@ def model(t, n=None):
 
 
 \section{Encoding language into Z3}
- The / formulas and symbolic reasoning  
+In order to search for viable programs, we encode the language's syntax and semantics, 
+along with the input data into a Z3 formula and run Z3's SMT algorithm.
+The technique for encoding a space of programs is far more intricate than compiling a program.
+
+It constructs a search space recursively by following the structure of the grammar. 
+If the syntax allows a choice of productions, it constructs a boolean control variable for each choice
+and constructs a an if-then-else term across each choice's abstract value, guarded its respective control variable. 
+Additionally, it constructs the constraint that at most one control variable for a particular set of choices    
+is allowed to be true, which along with the if-then-else constraint, ensures
+that exactly one subterm for each choice is identified, if there is a solution.  
+
+The encoding specifies how leaf terms are denoted as Z3 formulas for each sample input.
+The leaf syntax representing a parameter simply denotes a the corresponding column of the input data. 
+The denotation may be abstract consisting of both a Z3 expression and a constraint on that expression. 
+The formulas of subterm are propagated up to larger composite terms according to the semantics of 
+the composite terms.
+
 
 
 \end{document}
