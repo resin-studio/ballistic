@@ -171,7 +171,7 @@ at an implicit iteration index modulo 52.
 
 
 \section{Compiling programs into Pyro}
-In order to learn the posterior distributions of our programs, we compile down into  
+In order to learn the posterior distributions of our programs, the system compiles a program into  
 a Pyro model and run Pyro's SVI algorithm. For the most part, the compilation technique
 is fairly standard, but the $\text{align}(\cdot)$ operator deserves special attention. 
 Pyro's model operates over tensors of data, while the program DSL operates over points. 
@@ -197,7 +197,7 @@ def model(t, n=None):
 
 
 \section{Encoding language into Z3}
-In order to search for viable programs, we encode the language's syntax and semantics, 
+In order to search for viable programs, the system encodes the language's syntax and semantics, 
 along with the input data into a Z3 formula and run Z3's SMT algorithm.
 The technique for encoding a space of programs is far more intricate than compiling a program.
 
@@ -256,17 +256,17 @@ This could lead to a search space tree that looks as follows:
   \end{array}
 \]
 
-To measure the correctness of a found program $f$, we define a cost in terms of its 
-description length $-\text{log}\ \text{L}(f)$ and noise $-\text{log}\ \text{P}(y|f(x)) $.
+To measure the correctness of a found program $f$, 
+the synthesis procedure defines a cost in terms of a program's
+description length $-\text{log}\ \text{L}(f)$ and its noise $-\text{log}\ \text{P}(y|f(x)) $.
 A length is associated with each production rule in the grammar.
-Summing together the length across all nodes in the found program results 
-in the total description length . 
+Summing together the length across all the nodes of a program results 
+in a total description length for that program. 
 Noise is defined as the distance between the expected and actual results.
 
 \[
     - \text{log}\ \text{P}(y|f(x)) = |y - f(x)| 
 \]
-
 
 The total cost of a found program is the sum of the description length and the total noise over all the data. 
 
@@ -301,8 +301,19 @@ A plate's mean column is the mean across plate elements in each row.
 a plate's align column is the mean across instances in each column, rotated and realigned with number of instances. 
 
 % Encoding distribution constraints
+The encoding handles the semantics of distributions by introducing fresh weight variables  
+and adding constraints over those variables representing a plausible range of values
+within the distribution. For the normal distribution, it requires a lower bound of 
+$\mu - 3 * \sigma$ and a lower bound of and an upper bound of $\mu + 3 * \sigma$,
+where $\mu$ is the center of the distribution, and $\sigma$ is the standard deviation.
+For the log normal distribution, it uses the mode, mean, and skewness to define the boundaries
+of plausible values. 
 
 % Encoding with variables and plates in scope
+Since the language allows assigning variables to expressions, it is necessary to keep track
+of variable scoping and which columns of abstract values are associated with variables. 
+Thus, when generating expressions with variables, the encoding is limited to variables that
+are in scope, and their associated abstract values are propagated.
 
 
 \end{document}
