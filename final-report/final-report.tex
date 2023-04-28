@@ -1,9 +1,9 @@
 \documentclass[runningheads]{llncs}
 
-\usepackage[
-backend=biber,
-style=alphabetic,
-]{biblatex}
+% \usepackage[
+% backend=biber,
+% style=alphabetic,
+% ]{biblatex}
 
 \usepackage{mathpartir}
 \usepackage{hyperref}
@@ -14,6 +14,7 @@ style=alphabetic,
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
+\usepackage{url}
 
 \makeatletter % allow us to mention @-commands
 \def\arcr{\@arraycr}
@@ -35,7 +36,7 @@ style=alphabetic,
 
 \title{Synthesis of stochastic programs from data}
 \author{Thomas Logan}
-% \institute{University of Texas at Austin}
+\institute{University of Texas at Austin}
 
 \begin{document}
 \pagestyle{plain}
@@ -51,7 +52,7 @@ from inputs to outputs in a typical programming language, such as the following:
 
 However, current programming languages do not provide a compact notation 
 for representing the requirement that the weights $m$ and $b$ are learned from data.
-\textit{Pyro} \cite{} is a language embedded in \textit{Python} \cite{} for 
+\textit{Pyro} \cite{pyro} is a language embedded in \textit{Python} \cite{python} for 
 expressing the requirements of learning weights from data 
 with probabilities for measuring uncertainty in the learned result. 
 In Pyro, the simplest way to represent the above linear equation is as follows: 
@@ -95,13 +96,13 @@ x => {y | x, y : data}
 \end{lstlisting}
 
 The first part of the solution compiles a program in the DSL into a Pyro model and applies Pyro's 
-\textit{stochastic variational inference} (SVI) algorithm \cite{} to learn posterior distributions for the weights. 
+\textit{stochastic variational inference} (SVI) algorithm \cite{svi} to learn posterior distributions for the weights. 
 
 The second part of the solution encodes the DSL grammar and semantics into
-an logical formula in Z3 \cite{} and uses Z3's \textit{satisfiability modulo theories} (SMT) \cite{} algorithm to search
+an logical formula in Z3 \cite{z3} and uses Z3's \textit{satisfiability modulo theories} (SMT) \cite{smt} algorithm to search
 for a program with priors.  
 The particular technique for constructing the search space from the grammar and semantics 
-is based on that of Ellis et al \cite{}.
+is based on that of Ellis et al \cite{ellis}.
 Unfortunately, at the time of this writing, Z3 does not terminate in a reasonable amount of time, 
 despite using an encoding very similar to that of Ellis et al. 
 After finding the program, the first part may be used to learn posteriors. 
@@ -133,10 +134,17 @@ The programs in the domain specific language are constructed using the following
 
 To see what these combinations of syntax mean, consider a program
 for predicting the the number of unemployment insurance claims 
-between the 2008 recession and the 2020 pandemic \cite{}.
+between the 2008 recession and the 2020 pandemic \cite{plot}.
 Let's examine the plot of the data to gauge its shape.
 \newline
+\begin{figure}
 \includegraphics[scale=0.35]{weekly_claims}
+
+\caption{
+Weekly unemployment insurance claims. Source: Martin Jankowiak's slides \cite{plot}.   
+}
+\end{figure}
+
 
 There appears to be an overall trend that's fairly linear with respect to the year. 
 However, there are also periodic trends that seem to depend on the time of year.  
@@ -315,5 +323,40 @@ of variable scoping and which columns of abstract values are associated with var
 Thus, when generating expressions with variables, the encoding is limited to variables that
 are in scope, and their associated abstract values are propagated.
 
+\section{Conclusion}
+This work has presented a solution to the problem of finding stochastic functions that fit data.
+The first part simplifies describing functions with prior beliefs and data by defining a DSL for
+point-wise functions that are implicitly indexed and compiling these simple representations
+into more complicated Pyro models over tensors. It runs Pyro's SVI algorithm to learn the posterior weights. 
+The second part removes the burden of describing the function body by encoding the language and data into a Z3 formula. 
+It iteratively solves the formula and adds a constraint to lower the cost of the found function each iteration.  
+
+\newpage
+
+\begin{thebibliography}{9}
+
+\bibitem{Python} 
+G. Van Rossum, F.L. Drake. Introduction to python 3: python documentation manual part 1. In CreateSpace, 2009.
+
+\bibitem{plot}
+M. Jankowiak. Retrieved 2023-4-28 from \url{http://docs.mlinpl.org/conference/2019/slides/martin_jankowiak_mlinpl2019.pdf} 
+
+\bibitem{pyro}
+E.Bingham, J.P. Chen, M. Jankowiak, F. Obermeyer, N. Pradhan, T.Karaletsos, R. Singh, P. Szerlip, P. Horsfall and, N.D. Goodman. Pyro: Deep universal probabilistic programming. In JMLR, 2019. 
+
+\bibitem{svi}
+M.D. Hoffman, D.N. Blei, C. Wang, J. Paisley. Stochastic variational inference. In JMLR, 2013.
+
+\bibitem{z3}
+L. De Moura, N. Bjørner, Z3: An efficient SMT solver. In, TACAS, 2008. In ETAPS, 2008.
+
+\bibitem{smt}
+C. Barrett, R. Sebastiani, S. Seshia, C. Tinelli. Satisfiability Modulo Theories. In
+Handbook of Satisfiability. IOS Press, 2009.
+
+\bibitem{ellis}
+K. Ellis K, A. Solar-Lezama A, J. Tenenbaum. Unsupervised learning by program synthesis. In NIPS, 2015.
+
+\end{thebibliography}
 
 \end{document}

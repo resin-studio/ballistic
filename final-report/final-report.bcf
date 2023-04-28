@@ -2343,6 +2343,8 @@
   <bcf:bibdata section="0">
   </bcf:bibdata>
   <bcf:section number="0">
+    <bcf:citekey order="1">pyro</bcf:citekey>
+    <bcf:citekey order="10">pyro</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="anyt">
