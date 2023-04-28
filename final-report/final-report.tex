@@ -215,6 +215,52 @@ The denotation may be abstract consisting of both a Z3 expression and a constrai
 The formulas of subterm are propagated up to larger composite terms according to the semantics of 
 the composite terms.
 
+Since the ultimate goal is to extract a program, the procedure also 
+builds a tree with choices indexed by control variables, mirroring the Z3 formula.
+Once a solution is found, the program can be extracted from the tree by selecting
+the branches with a true control variable.
+
+For example, consider the part of the grammar for constructing sampling and distributions:
+
+\[
+  \begin{array}{l @{} l}
+    b &{} ::= x\ \sim\ d\ ;\ b \ |\ x\ \#\ n\ \sim\ d\ ;\ b \ |\ d \\ 
+    d &{} ::= 
+        \text{normal}(e, e) \ |\ 
+        \text{lognorm}(e, e) \ |\ 
+        \text{uniform}(e, e) \ |\ 
+        \text{halfnorm}(e) \ |\ 
+        @(e) \\ 
+  \end{array}
+\]
+
+This would lead to a search space tree that looks as follows:
+
+\[
+  \begin{array}{l }
+    \{ \\
+    \hspace{6mm} c_1 \mapsto x_1\ \sim\ \{ \\
+        \hspace{12mm} c_4 \mapsto \text{normal}(\hdots), \\
+        \hspace{12mm} c_5 \mapsto \text{lognorm}(\hdots), \\ 
+        \hspace{12mm} \vdots \\
+    \hspace{6mm}\},\\
+    \hspace{6mm} c_2 \mapsto x_2\ \#\ w\ \sim\ \{ \\
+        \hspace{12mm} c_9 \mapsto \text{normal}(\hdots), \\
+        \hspace{12mm} c_{10} \mapsto \text{lognorm}(\hdots), \\ 
+        \hspace{12mm} \vdots \\
+    \hspace{6mm}\},\\
+    \hspace{6mm} c_3 \mapsto \{ \\
+        \hspace{12mm} c_{14} \mapsto \text{normal}(\hdots), \\
+        \hspace{12mm} c_{15} \mapsto \text{lognorm}(\hdots), \\ 
+        \hspace{12mm} \vdots \\
+    \hspace{6mm}\}\\
+    \}
+    
+  \end{array}
+\]
+
+
+
 
 
 \end{document}
