@@ -3,10 +3,11 @@
 Bayesian regression synthesis
 
 ## TODO
-- see if expressions over plates are propagated properly.
-    - might need to convert output col to output matrix.
 
 ## notice
+- to generalize to plates, need to keep track of both a mean column and an align column.
+- a plate's mean column is the mean across plate elements for each sample. 
+- a plate's align column is the mean across samples and rotated and realigned with number of samples. 
 - the relation between inputs and outputs is connected via smt constraints and terms
     - the loss is defined by the noise formula, which is defined from output terms and sample data 
     - the solver slows down when constraints are added over the loss 
