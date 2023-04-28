@@ -1,9 +1,13 @@
-\documentclass[runningheads]{llncs}
+% \documentclass[]{article}
+% \documentclass[letterpaper]{article}
+% \setlength{\textwidth}{12cm}
 
 % \usepackage[
 % backend=biber,
 % style=alphabetic,
 % ]{biblatex}
+\documentclass[letterpaper]{llncs}
+\usepackage[letterpaper, margin=1.3in]{geometry}
 
 \usepackage{mathpartir}
 \usepackage{hyperref}
@@ -142,7 +146,9 @@ between the 2008 recession and the 2020 pandemic \cite{plot}.
 Let's examine the plot of the data to gauge its shape.
 \newline
 \begin{figure}
+\begin{center}
 \includegraphics[scale=0.35]{weekly_claims}
+\end{center}
 
 \caption{
 Weekly unemployment insurance claims. Source: Martin Jankowiak's slides \cite{plot}.   
