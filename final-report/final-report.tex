@@ -208,7 +208,7 @@ Additionally, it constructs the constraint that at most one control variable for
 is allowed to be true, which along with the if-then-else constraint, ensures
 that exactly one subterm for each choice is identified, if there is a solution.  
 
-The encoding specifies how leaf terms are denoted as Z3 formulas for each sample input.
+The encoding specifies how leaf terms are denoted as Z3 formulas for each input instance.
 The leaf syntax representing a parameter simply denotes a the corresponding column of the input data. 
 The denotation may be abstract consisting of both a Z3 expression and a constraint on that expression. 
 The formulas of subterm are propagated up to larger composite terms according to the semantics of 
@@ -256,31 +256,53 @@ This could lead to a search space tree that looks as follows:
   \end{array}
 \]
 
-description length
+To measure the correctness of a found program $f$, we define a cost in terms of its 
+description length $-\text{log}\ \text{L}(f)$ and noise $-\text{log}\ \text{P}(y|f(x)) $.
+A length is associated with each production rule in the grammar.
+Summing together the length across all nodes in the found program results 
+in the total description length . 
+Noise is defined as the distance between the expected and actual results.
 
-defining negative log prob
+\[
+    - \text{log}\ \text{P}(y|f(x)) = |y - f(x)| 
+\]
 
-defining loss
 
-iteratively solve adding constraints that the loss
-is smaller than the one just found,
-until no solution can be found.
+The total cost of a found program is the sum of the description length and the total noise over all the data. 
 
-extract the program using the last solution. 
+\[
+    - \text{log}\ \text{L}(f) + \sum_{i=1}^N - \text{log}\ \text{P}(y_i|f(x_i))
+\]
+
+The synthesis procedure asks Z3 to search the space for a program
+and its cost. If Z3 finds a program and a cost, the procedure 
+adds the constraint the the cost must be less than one just found
+and asks Z3 to find another. This repeats until Z3 can find a solution.
+The last found program is the best solution. The procedure 
+extracts the program by following the branches indicated by the 
+control variables. 
 
 There are a number of details of this language that require 
 special attention and do not fit neatly into the framework  
 developed by Ellis et al.
 
-Encoding plates: mean and align
+% Encoding plates: mean and align
+Due to the concept of plates and its 
+$\text{mean}(\cdot)$ and $\text{align}(\cdot)$,
+the encoding must actually propagate two columns of output formulas,
+one for mean, and one for align. 
+For non-plate terms that do not produce a plate, they simply
+produce the mean column, and leave the align column empty.  
 
-to generalize to plates, need to keep track of both a mean column and an align column.
-a plate's mean column is the mean across plate elements for each sample. 
-a plate's align column is the mean across samples and rotated and realigned with number of samples. 
+When generating plate distributions, it constructs a matrix of weight variables,
+where the number of columns corresponds to the size of the plate, and the number of rows corresponds
+to that of the data.
+A plate's mean column is the mean across plate elements in each row. 
+a plate's align column is the mean across instances in each column, rotated and realigned with number of instances. 
 
-Encoding distribution constraints
+% Encoding distribution constraints
 
-Encoding with variables and plates in scope
+% Encoding with variables and plates in scope
 
 
 \end{document}
