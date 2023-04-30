@@ -326,15 +326,32 @@ Noise is defined as the distance between the expected and actual results.
 \]
 
 The total cost of a found program is the sum of the description length and the total noise over all the data. 
-
+The system encodes this cost definition in Z3.
 \[
-    - \text{log}\ \text{L}(f) + \sum_{i=1}^N - \text{log}\ \text{P}(y_i|f(x_i))
+    cost = - \text{log}\ \text{L}(f) + \sum_{i=1}^N - \text{log}\ \text{P}(y_i|f(x_i))
 \]
 
 The synthesis procedure asks Z3 to search the space for a program
 and its cost. If Z3 finds a program and a cost, the procedure 
 adds the constraint that the cost must be less than the cost just found
 and asks Z3 to find another. This repeats until Z3 cannot find a solution.
+
+\[
+\begin{array}{l}
+  \text{search}(\phi, \sigma) \triangleq \\
+    \hspace{6mm}\begin{array}{@{} l}
+    \text{match}\ \text{solve}(\phi) \\
+    \cdot\ \bot \Rightarrow \sigma \\
+    \cdot\ \sigma' \Rightarrow \text{search}(\phi \wedge (cost < \sigma'[cost]), \sigma')
+      % \hspace{6mm}\begin{array}{@{} l}
+      %   \text{match}\ spurious(\pi, \vec{e}) \\
+      %   \cdot\ \bot \Rightarrow \pi\\
+      %   \cdot\ proof \Rightarrow \text{search}(\vec{e}, \Omega \cup predicates(proof))
+      % \end{array}
+    \end{array}
+\end{array}
+\]
+
 The last found program is the best solution. The procedure 
 extracts the program by following the branches indicated by the 
 control variables. 
@@ -342,7 +359,6 @@ control variables.
 There are a number of details of this language that require 
 special attention and do not fit neatly into the framework  
 developed by Ellis et al.
-
 % Encoding plates: mean and align
 Due to the concept of plates and its 
 $\text{mean}(\cdot)$ and $\text{align}(\cdot)$ operators,
