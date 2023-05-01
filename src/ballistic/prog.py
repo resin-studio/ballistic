@@ -1087,7 +1087,7 @@ class Extractor:
             return f'uniform({self.from_expr(tree.low)}, {self.from_expr(tree.high)})'
 
         elif isinstance(tree, HalfnormTree):
-            return f'halform({self.from_expr(tree.scale)})'
+            return f'halfnorm({self.from_expr(tree.scale)})'
 
         elif isinstance(tree, DirectTree):
             return f'@({self.from_expr(tree.content)})'
@@ -1269,14 +1269,14 @@ def generate_function(file, data=None):
 #############################
         ''')
 
-        # if body_source_code:
+        if body_source_code:
+            ast = parse_from_str(source_code)
+            stoch = learn_posteriors(ast, data)
+            return stoch
+
 
             # input_data = extract_fields(params, fields, data)
             # output_data = extract_field(result_name, fields, data)
-
-
-    #         ast = parse_from_str(source_code)
-    #         stoch = learn_posteriors(ast, data)
 
     #         input_cols = [input_data[:,i] for i in range(len(params))] 
     #         prediction = stoch.multi(*input_cols)
@@ -1295,6 +1295,7 @@ def generate_function(file, data=None):
     # $- scaled_loss: {scaled_loss}
     # #############################
     #         ''')
+
 
         return None
     else:
