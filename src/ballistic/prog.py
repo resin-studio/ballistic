@@ -410,11 +410,11 @@ class Spacer:
         self.plate_base_count = 0
         self.log_count = 0
         self.control_count = 0
-        self.body_fuel = 4 
-        self.expr_fuel = 4 
+        self.body_fuel = 1 
+        self.expr_fuel = 2 
         self.plate_size_max = 0 
-        self.exts_fuel = 6 
-        self.factors_fuel = 4
+        self.exts_fuel = 2 
+        self.factors_fuel = 0 
 
     def fresh_plate_base(self) -> str:
         plate_base = f'_vec_{self.plate_base_count}'
@@ -586,104 +586,104 @@ class Spacer:
 
         spaces : list[SubSpace[DistroOption]] = []
         
-        def scope_normal():
-            outcol = self.fresh_column(plate_size)
-            mean = self.to_expr(plates_in_scope, vars_in_scope)
-            sigma = self.to_expr(plates_in_scope, vars_in_scope)
+        # def scope_normal():
+        #     outcol = self.fresh_column(plate_size)
+        #     mean = self.to_expr(plates_in_scope, vars_in_scope)
+        #     sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
-            constraints = []
-            for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
-                lower = mean_out - 3 * sigma_out 
-                upper = mean_out + 3 * sigma_out
-                constraints.append(And([sigma_out > 0, lower <= out, out <= upper]))
+        #     constraints = []
+        #     for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
+        #         lower = mean_out - 3 * sigma_out 
+        #         upper = mean_out + 3 * sigma_out
+        #         constraints.append(And([sigma_out > 0, lower <= out, out <= upper]))
 
-            spaces.append(SubSpace(
-                tree = NormalTree(
-                    mean = mean.tree,
-                    sigma = sigma.tree
-                ),   
-                dlen = mean.dlen + sigma.dlen,
-                outcol = outcol,
-                constraints = mean.constraints + sigma.constraints + constraints
-            ))
-        scope_normal()
+        #     spaces.append(SubSpace(
+        #         tree = NormalTree(
+        #             mean = mean.tree,
+        #             sigma = sigma.tree
+        #         ),   
+        #         dlen = mean.dlen + sigma.dlen,
+        #         outcol = outcol,
+        #         constraints = mean.constraints + sigma.constraints + constraints
+        #     ))
+        # scope_normal()
 
-        def scope_lognorm():
-            outcol = self.fresh_column(plate_size)
-            mean = self.to_expr(plates_in_scope, vars_in_scope)
-            sigma = self.to_expr(plates_in_scope, vars_in_scope)
+        # def scope_lognorm():
+        #     outcol = self.fresh_column(plate_size)
+        #     mean = self.to_expr(plates_in_scope, vars_in_scope)
+        #     sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
-            constraints = []
-            for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
-                sigma_sq = sigma_out ** 2 
+        #     constraints = []
+        #     for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
+        #         sigma_sq = sigma_out ** 2 
 
-                mode = 2.7 ** (mean_out - sigma_sq)
-                lmean = 2.7 ** (mean_out + sigma_sq/2)
+        #         mode = 2.7 ** (mean_out - sigma_sq)
+        #         lmean = 2.7 ** (mean_out + sigma_sq/2)
 
-                esig_sq = 2.7 ** sigma_sq
-                skewness = (esig_sq + 2) * (esig_sq - 1) ** (1/2)
+        #         esig_sq = 2.7 ** sigma_sq
+        #         skewness = (esig_sq + 2) * (esig_sq - 1) ** (1/2)
 
-                lower = mode / 2
-                upper = lmean + skewness
-                constraints.append(
-                    # And(sigma_out > 0, lower < upper, lower <= out, out <= upper)
-                    And(sigma_out > 0, mean_out / 2 <= out,  out <= mean_out * 4)
-                )
+        #         lower = mode / 2
+        #         upper = lmean + skewness
+        #         constraints.append(
+        #             # And(sigma_out > 0, lower < upper, lower <= out, out <= upper)
+        #             And(sigma_out > 0, mean_out / 2 <= out,  out <= mean_out * 4)
+        #         )
 
-            spaces.append(SubSpace(
-                tree = LognormTree(
-                    mean = mean.tree,
-                    sigma = sigma.tree
-                ),   
-                dlen = mean.dlen + sigma.dlen,
-                outcol = outcol,
-                constraints = mean.constraints + sigma.constraints + constraints
-            ))
-        scope_lognorm()
+        #     spaces.append(SubSpace(
+        #         tree = LognormTree(
+        #             mean = mean.tree,
+        #             sigma = sigma.tree
+        #         ),   
+        #         dlen = mean.dlen + sigma.dlen,
+        #         outcol = outcol,
+        #         constraints = mean.constraints + sigma.constraints + constraints
+        #     ))
+        # scope_lognorm()
 
-        def scope_uniform():
-            outcol = self.fresh_column(plate_size)
-            low = self.to_expr(plates_in_scope, vars_in_scope)
-            high = self.to_expr(plates_in_scope, vars_in_scope)
+        # def scope_uniform():
+        #     outcol = self.fresh_column(plate_size)
+        #     low = self.to_expr(plates_in_scope, vars_in_scope)
+        #     high = self.to_expr(plates_in_scope, vars_in_scope)
 
-            constraints = []
-            for out, low_out, high_out in zip(outcol.mean, low.outcol.mean, high.outcol.mean): 
-                constraints.append(
-                    And(low_out < high_out, low_out <= out, out <= high_out)
-                )
+        #     constraints = []
+        #     for out, low_out, high_out in zip(outcol.mean, low.outcol.mean, high.outcol.mean): 
+        #         constraints.append(
+        #             And(low_out < high_out, low_out <= out, out <= high_out)
+        #         )
 
-            spaces.append(SubSpace(
-                tree = UniformTree(
-                    low = low.tree,
-                    high = high.tree
-                ), 
-                dlen = low.dlen + high.dlen,
-                outcol = outcol,
-                constraints = low.constraints + high.constraints + constraints
-            ))
-        scope_uniform()
-
-
-        def scope_halfnorm():
-            outcol = self.fresh_column(plate_size)
-            scale = self.to_expr(plates_in_scope, vars_in_scope)
-
-            constraints = []
-            for out, scl in zip(outcol.mean, scale.outcol.mean): 
-                lower = RealVal(0)
-                upper = 3 * scl 
-                constraints.append(And(scl > 0, lower <= out, out <= upper))
+        #     spaces.append(SubSpace(
+        #         tree = UniformTree(
+        #             low = low.tree,
+        #             high = high.tree
+        #         ), 
+        #         dlen = low.dlen + high.dlen,
+        #         outcol = outcol,
+        #         constraints = low.constraints + high.constraints + constraints
+        #     ))
+        # scope_uniform()
 
 
-            spaces.append(SubSpace(
-                tree = HalfnormTree(
-                    scale = scale.tree,
-                ),   
-                dlen = scale.dlen,
-                outcol = outcol,
-                constraints = scale.constraints + constraints
-            ))
-        scope_halfnorm()
+        # def scope_halfnorm():
+        #     outcol = self.fresh_column(plate_size)
+        #     scale = self.to_expr(plates_in_scope, vars_in_scope)
+
+        #     constraints = []
+        #     for out, scl in zip(outcol.mean, scale.outcol.mean): 
+        #         lower = RealVal(0)
+        #         upper = 3 * scl 
+        #         constraints.append(And(scl > 0, lower <= out, out <= upper))
+
+
+        #     spaces.append(SubSpace(
+        #         tree = HalfnormTree(
+        #             scale = scale.tree,
+        #         ),   
+        #         dlen = scale.dlen,
+        #         outcol = outcol,
+        #         constraints = scale.constraints + constraints
+        #     ))
+        # scope_halfnorm()
 
         def scope_direct():
             outcol = self.fresh_column(plate_size)
@@ -746,11 +746,6 @@ class Spacer:
                     outcol_align = tail.outcol.align
 
 
-                print('############################')
-                print('#### scope cons ####')
-                print(outcol_mean)
-                print('############################')
-
                 spaces.append(SubSpace(
                     tree = ConsExtTree(
                         head = head.tree,
@@ -764,10 +759,6 @@ class Spacer:
                 ))
             scope_cons_ext()
 
-            print('###### len(spaces) #######')
-            print(len(spaces))
-            print('############################')
-
         return self.combine(spaces)
 
     def to_expr(self, plates_in_scope : dict[str, Column], 
@@ -778,9 +769,6 @@ class Spacer:
 
 
         outcol_mean = [h + t for h,t in zip(base.outcol.mean, exts.outcol.mean)]
-        # print('--- outcol_mean ---')
-        # print(outcol_mean)
-        # print('--- end outcol_mean ---')
         outcol_align = [] 
         if len(base.outcol.align) > 0 and len(exts.outcol.align) > 0 : 
             outcol_align = [h + t for h,t in zip(base.outcol.align, exts.outcol.align)]
@@ -1049,12 +1037,7 @@ class Extractor:
 
     def choose(self, choices : Choices[T]) -> T:
 
-        # print(f"--choosey-- {len(choices)}")
         for control_key, subtree in choices.items():
-            # print("-----------------")
-            # print(f"key {control_key} : %s" % self.model[control_key])
-            # print(f"subtree {subtree.__class__.__name__}")
-            # print("-----------------")
             if ("%s" % self.model[control_key]) == "True":
                 return subtree
 
@@ -1181,8 +1164,8 @@ def synthesize_body(search_space : SearchSpace[BodyOption], output_data) -> tupl
     # print('----out constraints----------')
     # print(search_space.constraints)
     # print('------------------')
-    # s.add(loss_var == search_space.dlen + noise_total)
-    s.add(loss_var == noise_total)
+    s.add(loss_var == search_space.dlen + noise_total)
+    # s.add(loss_var == noise_total)
     # s.add(loss_var < 5)
 
     model = None
