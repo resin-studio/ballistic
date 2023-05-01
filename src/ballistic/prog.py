@@ -586,104 +586,104 @@ class Spacer:
 
         spaces : list[SubSpace[DistroOption]] = []
         
-        # def scope_normal():
-        #     outcol = self.fresh_column(plate_size)
-        #     mean = self.to_expr(plates_in_scope, vars_in_scope)
-        #     sigma = self.to_expr(plates_in_scope, vars_in_scope)
+        def scope_normal():
+            outcol = self.fresh_column(plate_size)
+            mean = self.to_expr(plates_in_scope, vars_in_scope)
+            sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
-        #     constraints = []
-        #     for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
-        #         lower = mean_out - 3 * sigma_out 
-        #         upper = mean_out + 3 * sigma_out
-        #         constraints.append(And([sigma_out > 0, lower <= out, out <= upper]))
+            constraints = []
+            for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
+                lower = mean_out - 3 * sigma_out 
+                upper = mean_out + 3 * sigma_out
+                constraints.append(And([sigma_out > 0, lower <= out, out <= upper]))
 
-        #     spaces.append(SubSpace(
-        #         tree = NormalTree(
-        #             mean = mean.tree,
-        #             sigma = sigma.tree
-        #         ),   
-        #         dlen = mean.dlen + sigma.dlen,
-        #         outcol = outcol,
-        #         constraints = mean.constraints + sigma.constraints + constraints
-        #     ))
-        # scope_normal()
+            spaces.append(SubSpace(
+                tree = NormalTree(
+                    mean = mean.tree,
+                    sigma = sigma.tree
+                ),   
+                dlen = mean.dlen + sigma.dlen,
+                outcol = outcol,
+                constraints = mean.constraints + sigma.constraints + constraints
+            ))
+        scope_normal()
 
-        # def scope_lognorm():
-        #     outcol = self.fresh_column(plate_size)
-        #     mean = self.to_expr(plates_in_scope, vars_in_scope)
-        #     sigma = self.to_expr(plates_in_scope, vars_in_scope)
+        def scope_lognorm():
+            outcol = self.fresh_column(plate_size)
+            mean = self.to_expr(plates_in_scope, vars_in_scope)
+            sigma = self.to_expr(plates_in_scope, vars_in_scope)
 
-        #     constraints = []
-        #     for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
-        #         sigma_sq = sigma_out ** 2 
+            constraints = []
+            for out, mean_out, sigma_out in zip(outcol.mean, mean.outcol.mean, sigma.outcol.mean): 
+                sigma_sq = sigma_out ** 2 
 
-        #         mode = 2.7 ** (mean_out - sigma_sq)
-        #         lmean = 2.7 ** (mean_out + sigma_sq/2)
+                mode = 2.7 ** (mean_out - sigma_sq)
+                lmean = 2.7 ** (mean_out + sigma_sq/2)
 
-        #         esig_sq = 2.7 ** sigma_sq
-        #         skewness = (esig_sq + 2) * (esig_sq - 1) ** (1/2)
+                esig_sq = 2.7 ** sigma_sq
+                skewness = (esig_sq + 2) * (esig_sq - 1) ** (1/2)
 
-        #         lower = mode / 2
-        #         upper = lmean + skewness
-        #         constraints.append(
-        #             # And(sigma_out > 0, lower < upper, lower <= out, out <= upper)
-        #             And(sigma_out > 0, mean_out / 2 <= out,  out <= mean_out * 4)
-        #         )
+                lower = mode / 2
+                upper = lmean + skewness
+                constraints.append(
+                    # And(sigma_out > 0, lower < upper, lower <= out, out <= upper)
+                    And(sigma_out > 0, mean_out / 2 <= out,  out <= mean_out * 4)
+                )
 
-        #     spaces.append(SubSpace(
-        #         tree = LognormTree(
-        #             mean = mean.tree,
-        #             sigma = sigma.tree
-        #         ),   
-        #         dlen = mean.dlen + sigma.dlen,
-        #         outcol = outcol,
-        #         constraints = mean.constraints + sigma.constraints + constraints
-        #     ))
-        # scope_lognorm()
+            spaces.append(SubSpace(
+                tree = LognormTree(
+                    mean = mean.tree,
+                    sigma = sigma.tree
+                ),   
+                dlen = mean.dlen + sigma.dlen,
+                outcol = outcol,
+                constraints = mean.constraints + sigma.constraints + constraints
+            ))
+        scope_lognorm()
 
-        # def scope_uniform():
-        #     outcol = self.fresh_column(plate_size)
-        #     low = self.to_expr(plates_in_scope, vars_in_scope)
-        #     high = self.to_expr(plates_in_scope, vars_in_scope)
+        def scope_uniform():
+            outcol = self.fresh_column(plate_size)
+            low = self.to_expr(plates_in_scope, vars_in_scope)
+            high = self.to_expr(plates_in_scope, vars_in_scope)
 
-        #     constraints = []
-        #     for out, low_out, high_out in zip(outcol.mean, low.outcol.mean, high.outcol.mean): 
-        #         constraints.append(
-        #             And(low_out < high_out, low_out <= out, out <= high_out)
-        #         )
+            constraints = []
+            for out, low_out, high_out in zip(outcol.mean, low.outcol.mean, high.outcol.mean): 
+                constraints.append(
+                    And(low_out < high_out, low_out <= out, out <= high_out)
+                )
 
-        #     spaces.append(SubSpace(
-        #         tree = UniformTree(
-        #             low = low.tree,
-        #             high = high.tree
-        #         ), 
-        #         dlen = low.dlen + high.dlen,
-        #         outcol = outcol,
-        #         constraints = low.constraints + high.constraints + constraints
-        #     ))
-        # scope_uniform()
-
-
-        # def scope_halfnorm():
-        #     outcol = self.fresh_column(plate_size)
-        #     scale = self.to_expr(plates_in_scope, vars_in_scope)
-
-        #     constraints = []
-        #     for out, scl in zip(outcol.mean, scale.outcol.mean): 
-        #         lower = RealVal(0)
-        #         upper = 3 * scl 
-        #         constraints.append(And(scl > 0, lower <= out, out <= upper))
+            spaces.append(SubSpace(
+                tree = UniformTree(
+                    low = low.tree,
+                    high = high.tree
+                ), 
+                dlen = low.dlen + high.dlen,
+                outcol = outcol,
+                constraints = low.constraints + high.constraints + constraints
+            ))
+        scope_uniform()
 
 
-        #     spaces.append(SubSpace(
-        #         tree = HalfnormTree(
-        #             scale = scale.tree,
-        #         ),   
-        #         dlen = scale.dlen,
-        #         outcol = outcol,
-        #         constraints = scale.constraints + constraints
-        #     ))
-        # scope_halfnorm()
+        def scope_halfnorm():
+            outcol = self.fresh_column(plate_size)
+            scale = self.to_expr(plates_in_scope, vars_in_scope)
+
+            constraints = []
+            for out, scl in zip(outcol.mean, scale.outcol.mean): 
+                lower = RealVal(0)
+                upper = 3 * scl 
+                constraints.append(And(scl > 0, lower <= out, out <= upper))
+
+
+            spaces.append(SubSpace(
+                tree = HalfnormTree(
+                    scale = scale.tree,
+                ),   
+                dlen = scale.dlen,
+                outcol = outcol,
+                constraints = scale.constraints + constraints
+            ))
+        scope_halfnorm()
 
         def scope_direct():
             outcol = self.fresh_column(plate_size)
@@ -968,26 +968,25 @@ class Spacer:
             scope_paren()
 
 
+        def scope_mean():
+            for plate, col in plates_in_scope.items():
+                spaces.append(SubSpace(
+                    tree = MeanTree(plate),     
+                    dlen = RealVal(1),
+                    outcol = Column(col.mean, []),
+                    constraints=[]
+                ))
+        scope_mean()
 
-        # def scope_mean():
-        #     for plate, col in plates_in_scope.items():
-        #         spaces.append(SubSpace(
-        #             tree = MeanTree(plate),     
-        #             dlen = RealVal(1),
-        #             outcol = Column(col.mean, []),
-        #             constraint=And()
-        #         ))
-        # scope_mean()
-
-        # def scope_align():
-        #     for plate, col in plates_in_scope.items():
-        #         spaces.append(SubSpace(
-        #             tree = MeanTree(plate),     
-        #             dlen = RealVal(1),
-        #             outcol = Column(col.align, []),
-        #             constraint=And()
-        #         ))
-        # scope_align()
+        def scope_align():
+            for plate, col in plates_in_scope.items():
+                spaces.append(SubSpace(
+                    tree = MeanTree(plate),     
+                    dlen = RealVal(1),
+                    outcol = Column(col.align, []),
+                    constraints = []
+                ))
+        scope_align()
 
 
         def scope_float():
@@ -1153,34 +1152,13 @@ def synthesize_body(search_space : SearchSpace[BodyOption], output_data) -> tupl
         for output, prediction in zip(output_data, search_space.outcol.mean)
     ])
 
-    # for prediction in search_space.outcol.mean:
-    #     print(f'--- prediction ---')
-    #     print(prediction)
-    # print('------------------')
-    # print(search_space.tree)
-    # print('------------------')
-
     s.add(search_space.constraints)
-    # print('----out constraints----------')
-    # print(search_space.constraints)
-    # print('------------------')
     s.add(loss_var == search_space.dlen + noise_total)
-    # s.add(loss_var == noise_total)
-    # s.add(loss_var < 5)
 
     model = None
     solve_max = 5 
 
     new_loss = 0
-    # print(f'-------checking below ---------')
-    # decision = s.check()
-    # print(decision)
-    # if decision == sat:
-    #     model = s.model()
-    #     decoder = Extractor(model)
-    #     source_code = decoder.from_body(search_space.tree) 
-    # print(f'-------checking above ---------')
-    # raise Exception('testing one check')
 
     print('------- checking SAT')
     while solve_max > 0 and s.check() == sat:
