@@ -410,11 +410,11 @@ class Spacer:
         self.plate_base_count = 0
         self.log_count = 0
         self.control_count = 0
-        self.body_fuel = 1 
-        self.expr_fuel = 1 
+        self.body_fuel = 4 
+        self.expr_fuel = 4 
         self.plate_size_max = 0 
-        self.exts_fuel = 2 
-        self.factors_fuel = 1 
+        self.exts_fuel = 6 
+        self.factors_fuel = 4
 
     def fresh_plate_base(self) -> str:
         plate_base = f'_vec_{self.plate_base_count}'
