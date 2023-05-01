@@ -97,4 +97,13 @@ solve(Not(Implies(And(ite, nps), And(ors, imps))))
 
 x = Real('x')
 y = Real('y')
-solve(y == x / 0)
+# solve(y == x / 0)
+
+outcol_mean = [h + t for h,t in zip([x], [y])]
+solve(*[x > 3 for x in outcol_mean])
+xs = [0] * 5
+xs[0] = 7
+xs[1] = 7
+xs[2] = 7
+xs[3] = 7
+print(xs)
